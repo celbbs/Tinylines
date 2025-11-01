@@ -1,6 +1,6 @@
 # tinylines_hello
 
-A simple line a day journaling applicaiton.
+A simple line-a-day journaling application.
 
 ## Getting Started
 
