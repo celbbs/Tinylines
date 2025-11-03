@@ -1,2 +1,2 @@
 # TinyLines
-readme setup and test commit from arianna
+TinyLines is a Flutter-based, one line a day journaling app.
