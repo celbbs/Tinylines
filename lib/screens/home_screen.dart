@@ -254,12 +254,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _createNewEntry(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const EntryEditorScreen(),
-      ),
-    );
+    final provider = Provider.of<JournalProvider>(context, listen: false);
+    final today = DateTime.now();
+    final todayEntry = provider.getEntryForDate(today);
+
+    if (todayEntry != null) {
+      // Entry already exists for today, open it for editing
+      _viewEntry(todayEntry);
+    } else {
+      // No entry for today, create new one
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const EntryEditorScreen(),
+        ),
+      );
+    }
   }
 
   void _createEntryForDate(DateTime date) {

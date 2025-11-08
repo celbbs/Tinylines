@@ -23,9 +23,8 @@ The core additions beyond the base Flutter project setup are as follows:
 - lib/utils/app_theme.dart - Minimalist design system with calm colors
 
 ## TODO
-- [ ] file writing bug (may be on emulator side rather than a direct code issue)
-- [ ] further manual testing
 - [ ] add unit tests
+- [ ] add new entry button should open today's note if it already exists, instead of opening a blank note which will overwrite the existing note if saved
 
 
 ## Resources
