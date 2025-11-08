@@ -1,5 +1,5 @@
-name: tinylines_hello
-description: "A new Flutter project."
+name: tiny_lines
+description: "A minimalist daily journaling app for creating simple, consistent journaling habits."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -28,12 +28,38 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+
   flutter:
     sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  # State management
+  provider: ^6.1.2
+
+  # Local storage
+  path_provider: ^2.1.5
+  shared_preferences: ^2.3.3
+
+  # Date and time utilities
+  intl: ^0.19.0
+
+  # Calendar view
+  table_calendar: ^3.1.2
+
+  # Image picker for photo attachments
+  image_picker: ^1.1.2
+
+  # -------------------------------------------------
+  # 🔥 Firebase dependencies (for auth, storage, cloud)
+  # -------------------------------------------------
+  firebase_core: ^3.5.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.3
+  # -------------------------------------------------
 
 dev_dependencies:
   flutter_test:
