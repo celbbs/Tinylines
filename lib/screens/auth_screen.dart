@@ -1,8 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'home_screen.dart';
 import '../services/auth_service.dart';
+import 'home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -18,11 +19,12 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   bool _isLogin = true;
   bool _isBusy = false;
   String? _error;
+  bool _obscure = true;
 
-  late AnimationController _bgController;
-  late AnimationController _cardController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late final AnimationController _bgController;
+  late final AnimationController _cardController;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
 
   @override
   void initState() {
@@ -30,23 +32,19 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
     _bgController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 20),
+      duration: const Duration(seconds: 18),
     )..repeat();
 
     _cardController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 650),
     );
 
-    _fadeAnimation =
-        CurvedAnimation(parent: _cardController, curve: Curves.easeInOut);
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.25),
+    _fade = CurvedAnimation(parent: _cardController, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.08),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _cardController, curve: Curves.easeOutBack),
-    );
+    ).animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOutCubic));
 
     _cardController.forward();
   }
@@ -87,270 +85,225 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       final msg = e.toString().replaceFirst('Exception: ', '');
       setState(() => _error = msg);
     } finally {
-      if (mounted) {
-        setState(() => _isBusy = false);
-      }
+      if (mounted) setState(() => _isBusy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return AnimatedBuilder(
       animation: _bgController,
       builder: (context, _) {
-        // Keeps the same vibe — animated warm gradient.
-        final colorTween = TweenSequence<Color?>([
-          TweenSequenceItem(
-            tween: ColorTween(
-              begin: const Color(0xFFFFD1A4),
-              end: const Color(0xFFFF9A9E),
-            ),
-            weight: 1,
-          ),
-          TweenSequenceItem(
-            tween: ColorTween(
-              begin: const Color(0xFFFF9A9E),
-              end: const Color(0xFF9E6FFF),
-            ),
-            weight: 1,
-          ),
-          TweenSequenceItem(
-            tween: ColorTween(
-              begin: const Color(0xFF9E6FFF),
-              end: const Color(0xFFFFD1A4),
-            ),
-            weight: 1,
-          ),
-        ]);
-
-        final color1 =
-            colorTween.evaluate(AlwaysStoppedAnimation(_bgController.value))!;
-        final color2 = colorTween.evaluate(
-          AlwaysStoppedAnimation((_bgController.value + 0.5) % 1.0),
-        )!;
+        // Subtle animated gradient shift (professional, not loud).
+        final t = _bgController.value;
+        final a = Color.lerp(const Color(0xFF0B1026), const Color(0xFF1B1145), t)!;
+        final b = Color.lerp(const Color(0xFF20104A), const Color(0xFF0E2A53), (t + 0.35) % 1.0)!;
+        final c = Color.lerp(const Color(0xFF0E2A53), const Color(0xFF0B1026), (t + 0.7) % 1.0)!;
 
         return Scaffold(
           resizeToAvoidBottomInset: true,
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [color1, color2],
+          body: Stack(
+            children: [
+              // Background gradient
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [a, b, c],
+                  ),
+                ),
               ),
-            ),
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 20),
 
-                    const Icon(
-                      Icons.edit_note_rounded,
-                      size: 88,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(height: 10),
+              // Blurred blobs (glassmorphism)
+              _BlobLight(
+                alignment: const Alignment(-0.85, -0.75),
+                diameter: size.width * 0.95,
+                color: const Color(0xFF8A5CFF).withOpacity(0.35),
+              ),
+              _BlobLight(
+                alignment: const Alignment(0.95, -0.35),
+                diameter: size.width * 0.8,
+                color: const Color(0xFFFF6FAE).withOpacity(0.28),
+              ),
+              _BlobLight(
+                alignment: const Alignment(0.25, 1.05),
+                diameter: size.width * 1.15,
+                color: const Color(0xFF3EE6FF).withOpacity(0.18),
+              ),
 
-                    const Text(
-                      "TinyLines",
-                      style: TextStyle(
-                        fontSize: 36,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    const Text(
-                      "A calm, lightweight journal.\nOne small line a day.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        height: 1.4,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    const _FeatureRow(
-                      icon: Icons.lock_outline,
-                      text: "Private, personal journaling",
-                    ),
-                    const SizedBox(height: 10),
-                    const _FeatureRow(
-                      icon: Icons.calendar_today_outlined,
-                      text: "Daily entries with calendar view",
-                    ),
-                    const SizedBox(height: 10),
-                    const _FeatureRow(
-                      icon: Icons.favorite_border,
-                      text: "Build a gentle daily habit",
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 26,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(32),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 22,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _isLogin ? "Sign In" : "Create Account",
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF4A148C),
-                                ),
-                              ),
-
-                              const SizedBox(height: 18),
-
-                              TextField(
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                decoration: InputDecoration(
-                                  hintText: "Email",
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 16,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              TextField(
-                                controller: _passwordController,
-                                obscureText: true,
-                                decoration: InputDecoration(
-                                  hintText: "Password",
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 16,
-                                  ),
-                                ),
-                              ),
-
-                              if (_error != null) ...[
-                                const SizedBox(height: 12),
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(22, 28, 22, 26),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          _AppMark(),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  _error!,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w600,
+                                  'TinyLines',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'A tiny journal, done daily.',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                        ],
+                      ),
 
-                              const SizedBox(height: 22),
+                      const SizedBox(height: 26),
 
-                              ElevatedButton(
-                                onPressed: _isBusy ? null : _submit,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF7B1FA2),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 64,
-                                    vertical: 14,
+                      // Big headline
+                      const Text(
+                        'Write one line.\nKeep the streak.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          height: 1.05,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Fast, private journaling that feels effortless.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 15,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+
+                      const SizedBox(height: 26),
+
+                      // Glass card
+                      FadeTransition(
+                        opacity: _fade,
+                        child: SlideTransition(
+                          position: _slide,
+                          child: _GlassCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _SegmentedToggle(
+                                  left: 'Sign in',
+                                  right: 'Register',
+                                  isLeftSelected: _isLogin,
+                                  onChanged: (isLeft) {
+                                    setState(() {
+                                      _isLogin = isLeft;
+                                      _error = null;
+                                    });
+                                  },
+                                ),
+
+                                const SizedBox(height: 18),
+
+                                _Field(
+                                  controller: _emailController,
+                                  hintText: 'Email',
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  leading: Icons.alternate_email_rounded,
+                                ),
+                                const SizedBox(height: 12),
+
+                                _Field(
+                                  controller: _passwordController,
+                                  hintText: 'Password',
+                                  obscureText: _obscure,
+                                  textInputAction: TextInputAction.done,
+                                  leading: Icons.lock_rounded,
+                                  trailing: IconButton(
+                                    onPressed: () => setState(() => _obscure = !_obscure),
+                                    icon: Icon(
+                                      _obscure ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                      color: Colors.white70,
+                                    ),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
+                                  onSubmitted: (_) => _isBusy ? null : _submit(),
+                                ),
+
+                                if (_error != null) ...[
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _error!,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFFB4B4),
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                  elevation: 6,
-                                ),
-                                child: Text(
-                                  _isBusy
-                                      ? "Please wait..."
-                                      : (_isLogin
-                                          ? "Sign In"
-                                          : "Create Account"),
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                              ),
+                                ],
 
-                              const SizedBox(height: 14),
+                                const SizedBox(height: 16),
 
-                              TextButton(
-                                onPressed: _isBusy
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _isLogin = !_isLogin;
-                                          _error = null;
-                                        });
-                                      },
-                                child: Text(
-                                  _isLogin
-                                      ? "Need an account? Register"
-                                      : "Already have an account? Sign In",
-                                  style: const TextStyle(
-                                    color: Color(0xFF4A148C),
-                                    fontWeight: FontWeight.w600,
+                                _PrimaryButton(
+                                  text: _isBusy
+                                      ? 'Please wait...'
+                                      : (_isLogin ? 'Continue' : 'Create account'),
+                                  onPressed: _isBusy ? null : _submit,
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                const Text(
+                                  'Auth is scaffolded for now.\nFirebase can be plugged in later with no UI changes.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 12.5,
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              const Text(
-                                "Auth is stubbed for now.\nFirebase can be plugged in later without changing this UI.",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black45,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 18),
+
+                      // Footer microcopy
+                      const Center(
+                        child: Text(
+                          'By continuing, you agree to keep your journal secure.',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -358,29 +311,245 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   }
 }
 
-class _FeatureRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
+class _AppMark extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      width: 44,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF8A5CFF), Color(0xFFFF6FAE)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const Icon(Icons.edit_note_rounded, color: Colors.white),
+    );
+  }
+}
 
-  const _FeatureRow({required this.icon, required this.text});
+class _BlobLight extends StatelessWidget {
+  final Alignment alignment;
+  final double diameter;
+  final Color color;
+
+  const _BlobLight({
+    required this.alignment,
+    required this.diameter,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white, size: 22),
-        const SizedBox(width: 10),
-        Expanded(
+    return Align(
+      alignment: alignment,
+      child: ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+        child: Container(
+          height: diameter,
+          width: diameter,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassCard extends StatelessWidget {
+  final Widget child;
+
+  const _GlassCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            color: Colors.white.withOpacity(0.12),
+            border: Border.all(color: Colors.white.withOpacity(0.18)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentedToggle extends StatelessWidget {
+  final String left;
+  final String right;
+  final bool isLeftSelected;
+  final ValueChanged<bool> onChanged;
+
+  const _SegmentedToggle({
+    required this.left,
+    required this.right,
+    required this.isLeftSelected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white.withOpacity(0.10),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentButton(
+              text: left,
+              selected: isLeftSelected,
+              onTap: () => onChanged(true),
+            ),
+          ),
+          Expanded(
+            child: _SegmentButton(
+              text: right,
+              selected: !isLeftSelected,
+              onTap: () => onChanged(false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentButton extends StatelessWidget {
+  final String text;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SegmentButton({
+    required this.text,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: selected ? Colors.white.withOpacity(0.18) : Colors.transparent,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Center(
           child: Text(
             text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
+            style: TextStyle(
+              color: selected ? Colors.white : Colors.white70,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _Field extends StatelessWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  final TextInputAction? textInputAction;
+  final IconData? leading;
+  final Widget? trailing;
+  final void Function(String)? onSubmitted;
+
+  const _Field({
+    required this.controller,
+    required this.hintText,
+    this.keyboardType,
+    this.obscureText = false,
+    this.textInputAction,
+    this.leading,
+    this.trailing,
+    this.onSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white.withOpacity(0.10),
+        border: Border.all(color: Colors.white.withOpacity(0.14)),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+        textInputAction: textInputAction,
+        onSubmitted: onSubmitted,
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w600),
+          prefixIcon: leading == null
+              ? null
+              : Icon(leading, color: Colors.white70),
+          suffixIcon: trailing,
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryButton extends StatelessWidget {
+  final String text;
+  final VoidCallback? onPressed;
+
+  const _PrimaryButton({required this.text, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF8A5CFF),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 10,
+          shadowColor: Colors.black.withOpacity(0.35),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.2),
+        ),
+      ),
     );
   }
 }
