@@ -1,10 +1,34 @@
 # TinyLines
 
-A simple line-a-day journaling application.
-CS461 Fall 2025
+*"A lightweight journaling app designed to help users capture one meaningful thought or memory each day through short entries and optional photos."*
 
-## Getting Started
+**Team:** Celia Babbs, Kuenaokeao Borling, Charles Loughin, Arianna Joffrion
+**Course:** CS461-400 Fall 2025
+**Institution:** Oregon State University
 
-This project is a starting point for a simple journaling application.
+---
 
-Build setup tutorial via: https://medium.com/@blup-tool/fluttering-into-action-a-step-by-step-guide-to-installing-and-configuring-flutter-sdk-on-macos-8eb9ab7065ff
+## Summary
+
+The core additions beyond the base Flutter project setup are as follows:
+
+### Core Architecture:
+- lib/models/journal_entry.dart - Data model with date-based IDs, content, and optional image paths
+- lib/services/storage_service.dart - Local file storage using markdown + JSON
+- lib/providers/journal_provider.dart - State management with Provider pattern
+
+### User Interface:
+- lib/screens/home_screen.dart - Calendar view with recent entries list
+- lib/screens/entry_editor_screen.dart - Entry creation/editing with photo support
+- lib/utils/app_theme.dart - Minimalist design system with calm colors
+
+## TODO
+- [ ] add unit tests
+- [ ] add new entry button should open today's note if it already exists, instead of opening a blank note which will overwrite the existing note if saved
+
+
+## Resources
+
+- [Flutter Documentation](https://docs.flutter.dev/)
+- [FlutterFire Documentation](https://firebase.google.com/docs/flutter/setup)
+- [Provider State Management](https://pub.dev/packages/provider)

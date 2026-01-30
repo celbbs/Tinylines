@@ -1,6 +1,6 @@
 {
-    "name": "tinylines_hello",
-    "short_name": "tinylines_hello",
+    "name": "tiny_lines",
+    "short_name": "tiny_lines",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,4 +1,4 @@
-package com.example.tinylines_hello
+package com.example.tiny_lines
 
 import io.flutter.embedding.android.FlutterActivity
 
