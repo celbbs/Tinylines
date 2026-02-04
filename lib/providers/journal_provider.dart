@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart';
 import '../models/journal_entry.dart';
 import '../services/storage_service.dart';
 
-/// Provider for managing journal entries state
+/// provider for managing journal entries state
 class JournalProvider with ChangeNotifier {
-  final StorageService _storageService = StorageService();
+  final StorageService _storageService;
   List<JournalEntry> _entries = [];
   bool _isLoading = false;
   String? _error;
@@ -14,13 +14,15 @@ class JournalProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+// mock storage injected
+  JournalProvider({StorageService? storage})
+      : _storageService = storage ?? StorageService() {
+    loadEntries();
+  }
+
   /// Gets all dates that have entries (for calendar highlighting)
   Set<DateTime> get entryDates {
     return _entries.map((e) => e.date).toSet();
-  }
-
-  JournalProvider() {
-    loadEntries();
   }
 
   /// Loads all journal entries from storage
