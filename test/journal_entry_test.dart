@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:tiny_lines/models/journal_entry.dart';
 
 void main() {

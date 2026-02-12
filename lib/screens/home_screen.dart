@@ -5,6 +5,8 @@ import '../providers/journal_provider.dart';
 import '../models/journal_entry.dart';
 import '../utils/app_theme.dart';
 import 'entry_editor_screen.dart';
+import 'package:tiny_lines/screens/on_this_day_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,9 +29,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TinyLines'),
-      ),
+
+    appBar: AppBar(
+      title: const Text('TinyLines'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.history),
+          tooltip: 'On This Day',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const OnThisDayScreen()),
+            );
+          },
+        ),
+     ],
+    ),
+
       body: Consumer<JournalProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -147,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 12,
           ),
         ),
-        // Event loader - shows dots for days with entries
+        // shows dots for days with entries to show they exist
         eventLoader: (day) {
           return provider.hasEntryForDate(day) ? [true] : [];
         },
