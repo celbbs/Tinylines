@@ -5,7 +5,7 @@ import '../services/storage_service.dart';
 
 /// Provider for managing journal entries state
 class JournalProvider with ChangeNotifier {
-  final StorageService _storageService = StorageService();
+  final StorageService _storageService;
   List<JournalEntry> _entries = [];
   bool _isLoading = false;
   String? _error;
@@ -15,11 +15,11 @@ class JournalProvider with ChangeNotifier {
   String? get error => _error;
 
   /// Gets all dates that have entries (for calendar highlighting)
-  Set<DateTime> get entryDates {
-    return _entries.map((e) => e.date).toSet();
-  }
+  Set<DateTime> get entryDates => _entries.map((e) => e.date).toSet();
 
-  JournalProvider() {
+//custom storage
+  JournalProvider({StorageService? storage})
+      : _storageService = storage ?? StorageService() {
     loadEntries();
   }
 
