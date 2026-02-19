@@ -2,9 +2,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/app_theme.dart';
+import '../services/auth_service.dart';
+import '../services/firebase_auth_service.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({
+    super.key,
+    AuthService? authService,
+  }) : _authService = authService;
+
+  // If null, we default to FirebaseAuthService() so behavior stays the same.
+  final AuthService? _authService;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -17,6 +25,8 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _isSignIn = true;
   bool _loading = false;
   String? _error;
+
+  AuthService get _authService => widget._authService ?? FirebaseAuthService();
 
   @override
   void dispose() {
@@ -43,19 +53,19 @@ class _SignInScreenState extends State<SignInScreen> {
       }
 
       if (_isSignIn) {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+        await _authService.signIn(email: email, password: password);
       } else {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+        await _authService.createAccount(email: email, password: password);
       }
     } on FirebaseAuthException catch (e) {
+      // Preserves your existing Firebase error behavior/messages.
       setState(() {
         _error = e.message ?? 'Authentication failed.';
+      });
+    } catch (_) {
+      // Covers fake/mocked auth services that throw non-Firebase exceptions.
+      setState(() {
+        _error = 'Authentication failed.';
       });
     } finally {
       if (mounted) {
@@ -82,12 +92,14 @@ class _SignInScreenState extends State<SignInScreen> {
             const SizedBox(height: AppTheme.spacingL),
 
             TextField(
+              key: const Key('auth_email_field'),
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
             const SizedBox(height: AppTheme.spacingM),
             TextField(
+              key: const Key('auth_password_field'),
               controller: _password,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Password'),
@@ -103,19 +115,22 @@ class _SignInScreenState extends State<SignInScreen> {
 
             const SizedBox(height: AppTheme.spacingM),
             ElevatedButton(
+              key: const Key('auth_sign_in_button'),
               onPressed: _loading ? null : _submit,
-              child: Text(_loading
-                  ? 'Please wait...'
-                  : (_isSignIn ? 'Sign In' : 'Create Account')),
+              child: Text(
+                _loading
+                    ? 'Please wait...'
+                    : (_isSignIn ? 'Sign In' : 'Create Account'),
+              ),
             ),
 
             TextButton(
-              onPressed: _loading
-                  ? null
-                  : () => setState(() => _isSignIn = !_isSignIn),
-              child: Text(_isSignIn
-                  ? 'Need an account? Sign up'
-                  : 'Already have an account? Sign in'),
+              onPressed: _loading ? null : () => setState(() => _isSignIn = !_isSignIn),
+              child: Text(
+                _isSignIn
+                    ? 'Need an account? Sign up'
+                    : 'Already have an account? Sign in',
+              ),
             ),
           ],
         ),
