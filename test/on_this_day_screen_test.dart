@@ -80,24 +80,21 @@ void main() {
       expect(find.text('No entries for this day'), findsOneWidget);
     });
 
-    testWidgets('displays multiple entries matching today', (tester) async {
-      final today = DateTime.now();
-      final entry1 = JournalEntry.forDate(date: today, content: 'Memory 1');
-      final entry2 = JournalEntry.forDate(date: today, content: 'Memory 2');
-      await provider.saveEntry(entry1);
-      await provider.saveEntry(entry2);
-
-      await tester.pumpWidget(
-        ChangeNotifierProvider.value(
-          value: provider,
-          child: const MaterialApp(home: OnThisDayScreen()),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text('Memory 1'), findsOneWidget);
-      expect(find.text('Memory 2'), findsOneWidget);
-    });
+testWidgets('second entry for same day replaces first', (tester) async {
+  final today = DateTime.now();
+  final entry1 = JournalEntry.forDate(date: today, content: 'Memory 1');
+  final entry2 = JournalEntry.forDate(date: today, content: 'Memory 2');
+  await provider.saveEntry(entry1);
+  await provider.saveEntry(entry2);
+  await tester.pumpWidget(
+    ChangeNotifierProvider.value(
+      value: provider,
+      child: const MaterialApp(home: OnThisDayScreen()),
+    ),
+  );
+  await tester.pumpAndSettle();
+  expect(find.text('Memory 2'), findsOneWidget);
+  expect(find.text('Memory 1'), findsNothing);
+});
   });
 }

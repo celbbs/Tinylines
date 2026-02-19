@@ -5,6 +5,7 @@ import '../providers/journal_provider.dart';
 import '../models/journal_entry.dart';
 import '../utils/app_theme.dart';
 import 'entry_editor_screen.dart';
+import 'on_this_day_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,9 +28,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TinyLines'),
-      ),
+appBar: AppBar(
+  title: const Text('TinyLines'),
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.auto_stories),
+      tooltip: 'On This Day',
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const OnThisDayScreen(),
+          ),
+        );
+      },
+    ),
+  ],
+),
       body: Consumer<JournalProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
