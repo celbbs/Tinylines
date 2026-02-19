@@ -22,11 +22,6 @@ The core additions beyond the base Flutter project setup are as follows:
 - lib/screens/entry_editor_screen.dart - Entry creation/editing with photo support
 - lib/utils/app_theme.dart - Minimalist design system with calm colors
 
-## TODO
-- [ ] add unit tests
-- [ ] add new entry button should open today's note if it already exists, instead of opening a blank note which will overwrite the existing note if saved
-
-
 ## Resources
 
 - [Flutter Documentation](https://docs.flutter.dev/)
