@@ -43,11 +43,9 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   }
 
   void _onContentChanged() {
-    if (!_isEdited) {
-      setState(() {
-        _isEdited = true;
-      });
-    }
+    setState(() {
+      _isEdited = true;
+    });
   }
 
   bool get _isNewEntry => widget.entry == null;

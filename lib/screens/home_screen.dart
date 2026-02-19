@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../providers/journal_provider.dart';
-import '../utils/app_theme.dart';
-import 'journal_entry_page.dart';
 
-/// ------------------------------------------------------------
-/// HomeScreen – Calendar + entries displayed below
-/// ------------------------------------------------------------
+import '../providers/journal_provider.dart';
+import '../models/journal_entry.dart';
+import '../utils/app_theme.dart';
+import 'entry_editor_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -35,14 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('TinyLines'),
         actions: [
           IconButton(
+            tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
-            tooltip: "Sign Out",
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Signed out successfully")),
-              );
-              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
             },
           ),
         ],
@@ -58,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildCalendar(provider),
                 const SizedBox(height: AppTheme.spacingL),
-                _buildRecentEntries(),
+                _buildRecentEntries(provider),
               ],
             ),
           );
@@ -71,9 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// --------------------------
-  /// Build the interactive calendar
-  /// --------------------------
   Widget _buildCalendar(JournalProvider provider) {
     return Container(
       margin: const EdgeInsets.all(AppTheme.spacingM),
@@ -93,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _selectedDay = selectedDay;
             _focusedDay = focusedDay;
           });
+          _onDaySelected(selectedDay, provider);
         },
         onFormatChanged: (format) {
           setState(() {
@@ -103,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _focusedDay = focusedDay;
         },
         calendarStyle: CalendarStyle(
+          // Today's date styling
           todayDecoration: BoxDecoration(
             color: AppTheme.accentColor.withValues(alpha: 0.3),
             shape: BoxShape.circle,
@@ -111,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.w600,
           ),
+          // Selected day styling
           selectedDecoration: const BoxDecoration(
             color: AppTheme.primaryColor,
             shape: BoxShape.circle,
@@ -119,10 +113,12 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
+          // Days with entries
           markerDecoration: const BoxDecoration(
             color: AppTheme.successColor,
             shape: BoxShape.circle,
           ),
+          // Default day styling
           defaultTextStyle: const TextStyle(
             color: AppTheme.textPrimary,
           ),
@@ -162,136 +158,145 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 12,
           ),
         ),
+        // Event loader - shows dots for days with entries
+        eventLoader: (day) {
+          return provider.hasEntryForDate(day) ? [true] : [];
+        },
       ),
     );
   }
 
-  /// --------------------------
-  /// Display Firestore entries below the calendar
-  /// --------------------------
-  Widget _buildRecentEntries() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Text(
-          "Sign in to view your journal entries.",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+  Widget _buildRecentEntries(JournalProvider provider) {
+    final recentEntries = provider.getRecentEntries(limit: 5);
+
+    if (recentEntries.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingXl),
+        child: Column(
+          children: [
+            Icon(
+              Icons.auto_stories_outlined,
+              size: 64,
+              color: AppTheme.textHint,
+            ),
+            const SizedBox(height: AppTheme.spacingM),
+            Text(
+              'No entries yet',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+            ),
+            const SizedBox(height: AppTheme.spacingS),
+            Text(
+              'Tap + to create your first entry',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
         ),
       );
     }
 
-    final entriesRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('entries')
-        .orderBy('timestamp', descending: true);
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: entriesRef.snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _noEntriesPlaceholder();
-        }
-
-        final docs = snapshot.data!.docs;
-
-        // Filter to only show entries for the selected day
-        final selected = _selectedDay != null
-            ? docs.where((doc) {
-                final ts = doc['timestamp'] as Timestamp?;
-                if (ts == null) return false;
-                final date = ts.toDate();
-                return date.year == _selectedDay!.year &&
-                    date.month == _selectedDay!.month &&
-                    date.day == _selectedDay!.day;
-              }).toList()
-            : docs;
-
-        if (selected.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(32),
-            child: Text(
-              "No entries for this day.",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: selected.length,
-          itemBuilder: (context, index) {
-            final data = selected[index].data() as Map<String, dynamic>;
-            final text = data['content'] ?? '';
-            final timestamp = data['timestamp'] as Timestamp?;
-            final date = timestamp?.toDate();
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (date != null)
-                      Text(
-                        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.indigo,
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    Text(
-                      text,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
+          child: Text(
+            'Recent Entries',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingS),
+        ...recentEntries.map((entry) => _buildEntryCard(entry)),
+        const SizedBox(height: AppTheme.spacingXxl),
+      ],
     );
   }
 
-  /// --------------------------
-  /// Placeholder for no entries
-  /// --------------------------
-  Widget _noEntriesPlaceholder() {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        children: const [
-          Icon(Icons.auto_stories_outlined, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'No entries yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+  Widget _buildEntryCard(JournalEntry entry) {
+    return Card(
+      child: InkWell(
+        onTap: () => _viewEntry(entry),
+        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacingM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    entry.formattedDate,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const Spacer(),
+                  if (entry.imagePath != null)
+                    const Icon(
+                      Icons.image,
+                      size: 16,
+                      color: AppTheme.textSecondary,
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.spacingS),
+              Text(
+                entry.content,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text('Tap + to create your first entry'),
-        ],
+        ),
       ),
     );
   }
 
-  /// --------------------------
-  /// Navigate to new entry page
-  /// --------------------------
+  void _onDaySelected(DateTime selectedDay, JournalProvider provider) {
+    final entry = provider.getEntryForDate(selectedDay);
+    if (entry != null) {
+      _viewEntry(entry);
+    } else {
+      _createEntryForDate(selectedDay);
+    }
+  }
+
   void _createNewEntry(BuildContext context) {
+    final provider = Provider.of<JournalProvider>(context, listen: false);
+    final today = DateTime.now();
+    final todayEntry = provider.getEntryForDate(today);
+
+    if (todayEntry != null) {
+      // Entry already exists for today, open it for editing
+      _viewEntry(todayEntry);
+    } else {
+      // No entry for today, create new one
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const EntryEditorScreen(),
+        ),
+      );
+    }
+  }
+
+  void _createEntryForDate(DateTime date) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const JournalEntryPage(),
+        builder: (context) => EntryEditorScreen(date: date),
+      ),
+    );
+  }
+
+  void _viewEntry(JournalEntry entry) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EntryEditorScreen(entry: entry),
       ),
     );
   }

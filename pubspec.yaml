@@ -28,7 +28,6 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-
   flutter:
     sdk: flutter
 
@@ -41,7 +40,6 @@ dependencies:
 
   # Local storage
   path_provider: ^2.1.5
-  shared_preferences: ^2.3.3
 
   # Date and time utilities
   intl: ^0.19.0
@@ -51,15 +49,9 @@ dependencies:
 
   # Image picker for photo attachments
   image_picker: ^1.1.2
-
-  # -------------------------------------------------
-  # 🔥 Firebase dependencies (for auth, storage, cloud)
-  # -------------------------------------------------
-  firebase_core: ^3.5.0
-  firebase_auth: ^5.3.0
-  cloud_firestore: ^5.4.4
-  firebase_storage: ^12.3.3
-  # -------------------------------------------------
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  cloud_firestore: ^6.1.2
 
 dev_dependencies:
   flutter_test:

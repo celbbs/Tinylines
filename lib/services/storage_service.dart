@@ -1,81 +1,49 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../models/journal_entry.dart';
 
 /// Service for managing local storage of journal entries
 class StorageService {
   static const String _entriesDir = 'journal_entries';
 
-  // Get the directory where entries are stored (for offline)
+  /// Gets the directory where entries are stored (scoped per user)
+  ///
+  /// This prevents multiple signed-in users on the same device from sharing
+  /// the same local journal files.
   Future<Directory> get _entriesDirectory async {
     final appDir = await getApplicationDocumentsDirectory();
-    final entriesDir = Directory('${appDir.path}/$_entriesDir');
+
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid ?? 'anonymous';
+
+    final entriesDir = Directory('${appDir.path}/$_entriesDir/$uid');
     if (!await entriesDir.exists()) {
       await entriesDir.create(recursive: true);
     }
     return entriesDir;
   }
 
-  // Saves a journal entry to both Firestore and local storage (for offline support)
+  /// Saves a journal entry to local storage
+  /// Entry content is stored as markdown, metadata as JSON
   Future<void> saveEntry(JournalEntry entry) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print("User is not logged in");
-      return;
-    }
+    final dir = await _entriesDirectory;
 
-    try {
-      final firestoreRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('entries');
+    // Save entry content as markdown
+    final contentFile = File('${dir.path}/${entry.id}.md');
+    await contentFile.writeAsString(entry.content);
 
-      // Save entry content to Firestore
-      await firestoreRef.add({
-        'content': entry.content,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      // Also save entry locally
-      final dir = await _entriesDirectory;
-      final contentFile = File('${dir.path}/${entry.id}.md');
-      await contentFile.writeAsString(entry.content);
-
-      final metadataFile = File('${dir.path}/${entry.id}.json');
-      await metadataFile.writeAsString(jsonEncode(entry.toJson()));
-
-      print("Entry saved successfully!");
-    } catch (e) {
-      print("Error saving entry: $e");
-    }
+    // Save metadata (date, imagePath, timestamps) as JSON
+    final metadataFile = File('${dir.path}/${entry.id}.json');
+    await metadataFile.writeAsString(jsonEncode(entry.toJson()));
   }
 
-  // Loads a specific entry from Firestore or local storage
+  /// Loads a specific entry by ID (date)
   Future<JournalEntry?> loadEntry(String id) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return null;
-    }
-
     try {
-      final firestoreRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('entries')
-          .doc(id);
-
-      // First, try loading from Firestore
-      final docSnapshot = await firestoreRef.get();
-      if (docSnapshot.exists) {
-        final data = docSnapshot.data()!;
-        final entry = JournalEntry.fromJson(data);
-        return entry;
-      }
-
-      // If not found in Firestore, load from local storage (for offline support)
       final dir = await _entriesDirectory;
       final metadataFile = File('${dir.path}/$id.json');
       final contentFile = File('${dir.path}/$id.md');
@@ -87,59 +55,52 @@ class StorageService {
       final metadataJson = jsonDecode(await metadataFile.readAsString());
       final content = await contentFile.readAsString();
 
+      // Create entry from metadata and content
       final entry = JournalEntry.fromJson(metadataJson);
       return entry.copyWith(content: content);
     } catch (e) {
+      // ignore: avoid_print
       print('Error loading entry $id: $e');
       return null;
     }
   }
 
-  // Load all journal entries (from Firestore)
+  /// Loads all journal entries
   Future<List<JournalEntry>> loadAllEntries() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return [];
-    }
-
     try {
-      final firestoreRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('entries')
-          .orderBy('timestamp', descending: true);
+      final dir = await _entriesDirectory;
+      final entries = <JournalEntry>[];
 
-      final querySnapshot = await firestoreRef.get();
-      final entries = querySnapshot.docs.map((doc) {
-        return JournalEntry.fromJson(doc.data());
-      }).toList();
+      final files = await dir.list().toList();
+      final jsonFiles = files
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.json'))
+          .toList();
 
+      for (final file in jsonFiles) {
+        final id = file.path
+            .split(Platform.pathSeparator)
+            .last
+            .replaceAll('.json', '');
+        final entry = await loadEntry(id);
+        if (entry != null) {
+          entries.add(entry);
+        }
+      }
+
+      // Sort by date, newest first
+      entries.sort((a, b) => b.date.compareTo(a.date));
       return entries;
     } catch (e) {
+      // ignore: avoid_print
       print('Error loading entries: $e');
       return [];
     }
   }
 
-  // Deletes a journal entry (from Firestore and local storage)
+  /// Deletes a journal entry
   Future<void> deleteEntry(String id) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print("User is not logged in");
-      return;
-    }
-
     try {
-      final firestoreRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('entries')
-          .doc(id);
-
-      // Delete from Firestore
-      await firestoreRef.delete();
-
-      // Delete from local storage (if applicable)
       final dir = await _entriesDirectory;
       final metadataFile = File('${dir.path}/$id.json');
       final contentFile = File('${dir.path}/$id.md');
@@ -151,9 +112,67 @@ class StorageService {
         await contentFile.delete();
       }
 
-      print("Entry deleted successfully!");
+      // Also delete associated image if it exists
+      final entry = await loadEntry(id);
+      if (entry?.imagePath != null) {
+        final imageFile = File(entry!.imagePath!);
+        if (await imageFile.exists()) {
+          await imageFile.delete();
+        }
+      }
     } catch (e) {
+      // ignore: avoid_print
       print('Error deleting entry $id: $e');
     }
+  }
+
+  /// Gets all dates that have entries
+  Future<Set<DateTime>> getEntryDates() async {
+    final entries = await loadAllEntries();
+    return entries.map((e) => e.date).toSet();
+  }
+
+  /// Checks if an entry exists for a specific date
+  Future<bool> hasEntryForDate(DateTime date) async {
+    final id = _formatDateId(date);
+    final entry = await loadEntry(id);
+    return entry != null;
+  }
+
+  /// Saves an image file and returns its path
+  Future<String> saveImage(File imageFile, String entryId) async {
+    try {
+      final dir = await _entriesDirectory;
+      final extension = imageFile.path.split('.').last;
+      final newPath = '${dir.path}/$entryId.$extension';
+
+      final savedImage = await imageFile.copy(newPath);
+      return savedImage.path;
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error saving image: $e');
+      rethrow;
+    }
+  }
+
+  /// Deletes an image file
+  Future<void> deleteImage(String imagePath) async {
+    try {
+      final imageFile = File(imagePath);
+      if (await imageFile.exists()) {
+        await imageFile.delete();
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error deleting image: $e');
+    }
+  }
+
+  /// Helper to format date to ID
+  String _formatDateId(DateTime date) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    return '${dateOnly.year.toString().padLeft(4, '0')}-'
+        '${dateOnly.month.toString().padLeft(2, '0')}-'
+        '${dateOnly.day.toString().padLeft(2, '0')}';
   }
 }
