@@ -39,7 +39,7 @@ void main() {
     late JournalProvider provider;
 
     setUp(() {
-      provider = JournalProvider(storage: MockStorageService());
+      provider = JournalProvider(storageService: MockStorageService());
     });
 
     test('saving two entries for same date keeps only one', () async {
