@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1081996176104",
+    "project_id": "tinylines-5265e",
+    "storage_bucket": "tinylines-5265e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1081996176104:android:d3630ae6c9cd32fa30f75d",
+        "android_client_info": {
+          "package_name": "com.example.tiny_lines"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkQNdSka40xy2hA09EoO0dQe_oao5C4ko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
