@@ -65,12 +65,14 @@ class JournalEntry {
   /// Returns a short formatted date (e.g., "Jan 1")
   String get shortDate => DateFormat('MMM d').format(date);
 
-  /// Creates a copy with updated fields
+  /// Creates a copy with updated fields.
+  /// Pass [clearImagePath] as true to explicitly set imagePath to null.
   JournalEntry copyWith({
     String? id,
     DateTime? date,
     String? content,
     String? imagePath,
+    bool clearImagePath = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -78,7 +80,7 @@ class JournalEntry {
       id: id ?? this.id,
       date: date ?? this.date,
       content: content ?? this.content,
-      imagePath: imagePath ?? this.imagePath,
+      imagePath: clearImagePath ? null : (imagePath ?? this.imagePath),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
