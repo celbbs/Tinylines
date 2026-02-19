@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class JournalEntryPage extends StatefulWidget {
-  const JournalEntryPage({Key? key}) : super(key: key);
+  const JournalEntryPage({super.key});
 
   @override
   State<JournalEntryPage> createState() => _JournalEntryPageState();

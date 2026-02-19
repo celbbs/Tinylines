@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'journal_entry_page.dart';
 import 'settings_page.dart';
 
 void main() {
