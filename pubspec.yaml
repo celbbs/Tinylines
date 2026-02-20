@@ -65,6 +65,16 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
+  # Mocking framework for unit tests
+  mockito: ^5.4.4
+
+  # Code generation (required by mockito)
+  build_runner: ^2.4.9
+
+  # Required for faking path_provider in tests
+  path_provider_platform_interface: ^2.1.2
+  plugin_platform_interface: ^2.1.8
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
