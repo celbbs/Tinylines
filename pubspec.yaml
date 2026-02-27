@@ -30,7 +30,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.18.0
   google_fonts: ^6.2.1
   flutter_secure_storage: ^9.2.2
 

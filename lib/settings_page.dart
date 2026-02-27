@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'passcode_page.dart';
+import 'services/notification_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -23,7 +24,7 @@ class _SettingsPageState extends State<SettingsPage> {
   TimeOfDay dailyReminderTime = const TimeOfDay(hour: 19, minute: 0);
   bool remindersEnabled = true;
   bool hidePreviewsEnabled = false;
-  bool _pinIsSet = false; // tracks whether a PIN has been saved or not
+  bool _pinIsSet = false;
 
   // default values for reset
   static const String _defaultTheme = 'Dark';
@@ -38,12 +39,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // all accent colors
   final List<Color> accentColors = [
-    const Color(0xFF4A90E2), // blue
-    const Color(0xFF50C878), // green
-    const Color(0xFFE74C3C), // red
-    const Color(0xFF9B59B6), // purple
-    const Color(0xFFF39C12), // orange
-    const Color(0xFF1ABC9C), // teal
+    const Color(0xFF4A90E2),
+    const Color(0xFF50C878),
+    const Color(0xFFE74C3C),
+    const Color(0xFF9B59B6),
+    const Color(0xFFF39C12),
+    const Color(0xFF1ABC9C),
   ];
 
   @override
@@ -59,7 +60,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // font size getter
   double get baseFontSize {
     switch (selectedFontSize) {
       case 'Small':
@@ -72,7 +72,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // font family getter
   String? get selectedFontFamily {
     switch (selectedFontStyle) {
       case 'Serif':
@@ -85,7 +84,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // theme color getters
   Color get backgroundColor {
     switch (selectedTheme) {
       case 'Light':
@@ -151,7 +149,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // passcode navigation
   Future<void> _openPasscodePage() async {
     final saved = await Navigator.push<bool>(
       context,
@@ -168,22 +165,18 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
-    // if PasscodePage returned true, a PIN was saved. refresh the label
     if (saved == true) {
       _checkPinStatus();
     }
   }
 
-  // reset settings and delete acct dialogue
   void _showResetDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text(
-          'Reset Settings',
-          style: TextStyle(color: textColor, fontFamily: selectedFontFamily),
-        ),
+        title: Text('Reset Settings',
+            style: TextStyle(color: textColor, fontFamily: selectedFontFamily)),
         content: Text(
           'This will restore all settings to their defaults:\n\n'
           '• Theme: Dark\n'
@@ -202,8 +195,7 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: TextStyle(color: secondaryTextColor)),
+            child: Text('Cancel', style: TextStyle(color: secondaryTextColor)),
           ),
           TextButton(
             onPressed: () {
@@ -236,10 +228,8 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text(
-          'Delete Account',
-          style: TextStyle(color: Colors.red, fontFamily: selectedFontFamily),
-        ),
+        title: Text('Delete Account',
+            style: TextStyle(color: Colors.red, fontFamily: selectedFontFamily)),
         content: Text(
           'Are you sure you want to permanently delete your account? '
           'All your journal entries and settings will be lost and cannot be recovered.',
@@ -252,14 +242,12 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: TextStyle(color: secondaryTextColor)),
+            child: Text('Cancel', style: TextStyle(color: secondaryTextColor)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               // todo: call kuena's auth layer to delete the firebase account
-              // ?? await FirebaseAuth.instance.currentUser?.delete(); ?
             },
             child: const Text('Delete',
                 style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -269,7 +257,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -294,10 +281,8 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // appearance section
           _buildSectionHeader('APPEARANCE'),
           const SizedBox(height: 12),
-
           _buildSettingLabel('Theme'),
           const SizedBox(height: 8),
           Row(
@@ -310,14 +295,12 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           ),
           const SizedBox(height: 20),
-
           _buildSettingLabel('Accent Color'),
           const SizedBox(height: 8),
           Row(
             children: accentColors.map((color) => _buildColorOption(color)).toList(),
           ),
           const SizedBox(height: 20),
-
           _buildDropdownSetting(
             'Font Size',
             selectedFontSize,
@@ -325,7 +308,6 @@ class _SettingsPageState extends State<SettingsPage> {
             (value) => setState(() => selectedFontSize = value!),
           ),
           const SizedBox(height: 16),
-
           _buildDropdownSetting(
             'Font Style',
             selectedFontStyle,
@@ -334,17 +316,14 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 32),
 
-          // journaling section
           _buildSectionHeader('JOURNALING'),
           const SizedBox(height: 12),
-
           _buildToggleSetting(
             'Daily Prompt',
             dailyPromptEnabled,
             (value) => setState(() => dailyPromptEnabled = value),
           ),
           const SizedBox(height: 16),
-
           _buildDropdownSetting(
             'Auto-Save',
             autoSaveInterval,
@@ -353,10 +332,8 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 32),
 
-          // notifs section
           _buildSectionHeader('NOTIFICATIONS'),
           const SizedBox(height: 12),
-
           _buildTimeSetting(
             'Daily Reminder',
             dailyReminderTime,
@@ -367,30 +344,41 @@ class _SettingsPageState extends State<SettingsPage> {
               );
               if (picked != null) {
                 setState(() => dailyReminderTime = picked);
+                if (remindersEnabled) {
+                  await NotificationService.instance.scheduleDailyReminder(
+                    hour: picked.hour,
+                    minute: picked.minute,
+                  );
+                }
               }
             },
           ),
           const SizedBox(height: 16),
-
           _buildToggleSetting(
             'Reminders Enabled',
             remindersEnabled,
-            (value) => setState(() => remindersEnabled = value),
+            (value) async {
+              setState(() => remindersEnabled = value);
+              if (value) {
+                await NotificationService.instance.scheduleDailyReminder(
+                  hour: dailyReminderTime.hour,
+                  minute: dailyReminderTime.minute,
+                );
+              } else {
+                await NotificationService.instance.cancelDailyReminder();
+              }
+            },
           ),
           const SizedBox(height: 32),
 
-          // privacy section
           _buildSectionHeader('PRIVACY'),
           const SizedBox(height: 12),
-
-          // shows "Set" if no PIN exists and "Change" if one does
           _buildNavigationSetting(
             'App Passcode',
             _pinIsSet ? 'Change' : 'Set',
             onTap: _openPasscodePage,
           ),
           const SizedBox(height: 16),
-
           _buildToggleSetting(
             'Hide Previews',
             hidePreviewsEnabled,
@@ -398,24 +386,18 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 32),
 
-          // account section
           _buildSectionHeader('ACCOUNT'),
           const SizedBox(height: 12),
-
           _buildNavigationSetting('Profile Name', 'Arianna'),
           const SizedBox(height: 16),
-
           _buildTappableSetting('Reset Settings', onTap: _showResetDialog),
           const SizedBox(height: 16),
-
           _buildDeleteAccountSetting(),
           const SizedBox(height: 32),
         ],
       ),
     );
   }
-
-  // widget helpers
 
   Widget _buildSectionHeader(String title) {
     return Text(
@@ -455,11 +437,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.white : secondaryTextColor,
-                size: 24,
-              ),
+              Icon(icon,
+                  color: isSelected ? Colors.white : secondaryTextColor,
+                  size: 24),
               const SizedBox(height: 4),
               Text(
                 theme,
@@ -524,14 +504,12 @@ class _SettingsPageState extends State<SettingsPage> {
             items: options.map((String option) {
               return DropdownMenuItem<String>(
                 value: option,
-                child: Text(
-                  option,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: baseFontSize,
-                    fontFamily: selectedFontFamily,
-                  ),
-                ),
+                child: Text(option,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: baseFontSize,
+                      fontFamily: selectedFontFamily,
+                    )),
               );
             }).toList(),
           ),
@@ -582,9 +560,10 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNavigationSetting(String label, String value, {VoidCallback? onTap}) {
+  Widget _buildNavigationSetting(String label, String value,
+      {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: onTap ?? () {}, // todo: add sub page navigation where needed
+      onTap: onTap ?? () {},
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -592,20 +571,15 @@ class _SettingsPageState extends State<SettingsPage> {
           Row(
             children: [
               if (value.isNotEmpty)
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: secondaryTextColor,
-                    fontSize: baseFontSize,
-                    fontFamily: selectedFontFamily,
-                  ),
-                ),
+                Text(value,
+                    style: TextStyle(
+                      color: secondaryTextColor,
+                      fontSize: baseFontSize,
+                      fontFamily: selectedFontFamily,
+                    )),
               const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right,
-                color: secondaryTextColor.withOpacity(0.5),
-                size: 20,
-              ),
+              Icon(Icons.chevron_right,
+                  color: secondaryTextColor.withOpacity(0.5), size: 20),
             ],
           ),
         ],
@@ -620,11 +594,8 @@ class _SettingsPageState extends State<SettingsPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildSettingLabel(label),
-          Icon(
-            Icons.chevron_right,
-            color: secondaryTextColor.withOpacity(0.5),
-            size: 20,
-          ),
+          Icon(Icons.chevron_right,
+              color: secondaryTextColor.withOpacity(0.5), size: 20),
         ],
       ),
     );
@@ -645,11 +616,8 @@ class _SettingsPageState extends State<SettingsPage> {
               fontFamily: selectedFontFamily,
             ),
           ),
-          Icon(
-            Icons.chevron_right,
-            color: secondaryTextColor.withOpacity(0.5),
-            size: 20,
-          ),
+          Icon(Icons.chevron_right,
+              color: secondaryTextColor.withOpacity(0.5), size: 20),
         ],
       ),
     );

@@ -16,7 +16,6 @@ void main() async {
   );
   // Initialize notifications
   await NotificationService.instance.init();
-  await NotificationService.instance.scheduleDailyReminder(hour: 20, minute: 0);
   runApp(const TinyLinesApp());
 }
 
