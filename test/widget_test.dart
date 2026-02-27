@@ -1,14 +1,14 @@
 // This is a basic Flutter widget test for TinyLines.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinylines/main.dart';
 
-import 'package:tiny_lines/main.dart';
 
 void main() {
   testWidgets('TinyLines app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const TinyLinesApp());
+    await tester.pumpWidget(TinyLinesApp(showTutorial: false));
+
 
     // Verify that TinyLines title appears.
     expect(find.text('TinyLines'), findsOneWidget);

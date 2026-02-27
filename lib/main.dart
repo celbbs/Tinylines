@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/journal_provider.dart';
 import 'screens/home_screen.dart';
-import 'settings_page.dart';
+import 'tutorial_page.dart';
 import 'utils/app_theme.dart';
+import 'utils/tutorial_helper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -11,17 +12,24 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   // Initialize notifications
   await NotificationService.instance.init();
-  runApp(const TinyLinesApp());
+
+  // Check if tutorial was seen
+  bool seenTutorial = await TutorialHelper.hasSeenTutorial();
+
+  runApp(TinyLinesApp(showTutorial: !seenTutorial));
 }
 
-
 class TinyLinesApp extends StatelessWidget {
-  const TinyLinesApp({super.key});
+  final bool showTutorial;
+  const TinyLinesApp({super.key, required this.showTutorial});
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +39,13 @@ class TinyLinesApp extends StatelessWidget {
         title: 'TinyLines',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
-        home: const HomeScreen(),
+        home: showTutorial ? const TutorialPage() : const HomeScreen(),
       ),
     );
   }
 }
 
+// Optional: request notification permissions
 Future<void> requestNotificationPermission() async {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
 

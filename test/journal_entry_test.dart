@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tiny_lines/models/journal_entry.dart';
-import 'package:tiny_lines/services/storage_service.dart';
+import 'package:tinylines/models/journal_entry.dart';
+import 'package:tinylines/services/storage_service.dart';
 
 
 // Mock storage service for tests

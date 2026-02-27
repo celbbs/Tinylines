@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'tutorial_page.dart';
 import 'passcode_page.dart';
-import 'services/notification_service.dart';
+import '../services/notification_service.dart';
+import 'package:tinylines/utils/tutorial_helper.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -15,7 +17,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _storage = const FlutterSecureStorage();
 
   // state variables
-  String selectedTheme = 'Dark';
+  String selectedTheme = 'Light';
   Color selectedAccentColor = const Color(0xFF4A90E2);
   String selectedFontSize = 'Medium';
   String selectedFontStyle = 'Sans Serif';
@@ -26,8 +28,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool hidePreviewsEnabled = false;
   bool _pinIsSet = false;
 
-  // default values for reset
-  static const String _defaultTheme = 'Dark';
+  // default values
+  static const String _defaultTheme = 'Light';
   static const Color _defaultAccentColor = Color(0xFF4A90E2);
   static const String _defaultFontSize = 'Medium';
   static const String _defaultFontStyle = 'Sans Serif';
@@ -37,7 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
   static const bool _defaultRemindersEnabled = true;
   static const bool _defaultHidePreviews = false;
 
-  // all accent colors
+  // accent colors
   final List<Color> accentColors = [
     const Color(0xFF4A90E2),
     const Color(0xFF50C878),
@@ -66,7 +68,6 @@ class _SettingsPageState extends State<SettingsPage> {
         return 13.0;
       case 'Large':
         return 18.0;
-      case 'Medium':
       default:
         return 15.0;
     }
@@ -78,7 +79,6 @@ class _SettingsPageState extends State<SettingsPage> {
         return 'serif';
       case 'Handwriting':
         return GoogleFonts.caveat().fontFamily;
-      case 'Sans Serif':
       default:
         return null;
     }
@@ -247,7 +247,6 @@ class _SettingsPageState extends State<SettingsPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // todo: call kuena's auth layer to delete the firebase account
             },
             child: const Text('Delete',
                 style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -278,154 +277,202 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSectionHeader('APPEARANCE'),
-          const SizedBox(height: 12),
-          _buildSettingLabel('Theme'),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildThemeOption('Light', Icons.wb_sunny_outlined),
-              const SizedBox(width: 12),
-              _buildThemeOption('Dark', Icons.nightlight_round),
-              const SizedBox(width: 12),
-              _buildThemeOption('Pastel', Icons.palette_outlined),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildSettingLabel('Accent Color'),
-          const SizedBox(height: 8),
-          Row(
-            children: accentColors.map((color) => _buildColorOption(color)).toList(),
-          ),
-          const SizedBox(height: 20),
-          _buildDropdownSetting(
-            'Font Size',
-            selectedFontSize,
-            ['Small', 'Medium', 'Large'],
-            (value) => setState(() => selectedFontSize = value!),
-          ),
-          const SizedBox(height: 16),
-          _buildDropdownSetting(
-            'Font Style',
-            selectedFontStyle,
-            ['Sans Serif', 'Serif', 'Handwriting'],
-            (value) => setState(() => selectedFontStyle = value!),
-          ),
-          const SizedBox(height: 32),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildSectionHeader('APPEARANCE'),
+            const SizedBox(height: 12),
 
-          _buildSectionHeader('JOURNALING'),
-          const SizedBox(height: 12),
-          _buildToggleSetting(
-            'Daily Prompt',
-            dailyPromptEnabled,
-            (value) => setState(() => dailyPromptEnabled = value),
-          ),
-          const SizedBox(height: 16),
-          _buildDropdownSetting(
-            'Auto-Save',
-            autoSaveInterval,
-            ['10 seconds', '30 seconds', '60 seconds'],
-            (value) => setState(() => autoSaveInterval = value!),
-          ),
-          const SizedBox(height: 32),
+            // THEME — restored wide boxes
+            _buildSettingLabel('Theme'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildThemeOption('Light', Icons.wb_sunny_outlined),
+                const SizedBox(width: 12),
+                _buildThemeOption('Dark', Icons.nightlight_round),
+                const SizedBox(width: 12),
+                _buildThemeOption('Pastel', Icons.palette_outlined),
+              ],
+            ),
+            const SizedBox(height: 20),
 
-          _buildSectionHeader('NOTIFICATIONS'),
-          const SizedBox(height: 12),
-          _buildTimeSetting(
-            'Daily Reminder',
-            dailyReminderTime,
-            () async {
-              final TimeOfDay? picked = await showTimePicker(
-                context: context,
-                initialTime: dailyReminderTime,
-              );
-              if (picked != null) {
-                setState(() => dailyReminderTime = picked);
-                if (remindersEnabled) {
-                  await NotificationService.instance.scheduleDailyReminder(
-                    hour: picked.hour,
-                    minute: picked.minute,
-                  );
-                }
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          _buildToggleSetting(
-            'Reminders Enabled',
-            remindersEnabled,
-            (value) async {
-              setState(() => remindersEnabled = value);
-              if (value) {
-                await NotificationService.instance.scheduleDailyReminder(
-                  hour: dailyReminderTime.hour,
-                  minute: dailyReminderTime.minute,
+            // ACCENT COLOR
+            _buildSettingLabel('Accent Color'),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: accentColors.map(_buildColorOption).toList(),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // FONT SIZE
+            _buildDropdownSetting(
+              'Font Size',
+              selectedFontSize,
+              ['Small', 'Medium', 'Large'],
+              (value) => setState(() => selectedFontSize = value!),
+            ),
+            const SizedBox(height: 16),
+
+            // FONT STYLE
+            _buildDropdownSetting(
+              'Font Style',
+              selectedFontStyle,
+              ['Sans Serif', 'Serif', 'Handwriting'],
+              (value) => setState(() => selectedFontStyle = value!),
+            ),
+            const SizedBox(height: 32),
+
+            // JOURNALING
+            _buildSectionHeader('JOURNALING'),
+            const SizedBox(height: 12),
+            _buildToggleSetting(
+              'Daily Prompt',
+              dailyPromptEnabled,
+              (value) => setState(() => dailyPromptEnabled = value),
+            ),
+            const SizedBox(height: 16),
+            _buildDropdownSetting(
+              'Auto-Save',
+              autoSaveInterval,
+              ['10 seconds', '30 seconds', '60 seconds'],
+              (value) => setState(() => autoSaveInterval = value!),
+            ),
+            const SizedBox(height: 32),
+
+            // TUTORIAL
+            _buildSectionHeader('APP TUTORIAL'),
+            const SizedBox(height: 12),
+            _buildTappableSetting(
+              'Show Tutorial',
+              onTap: () async {
+                await TutorialHelper.setTutorialSeen(false);
+                if (!mounted) return;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TutorialPage()),
                 );
-              } else {
-                await NotificationService.instance.cancelDailyReminder();
-              }
-            },
-          ),
-          const SizedBox(height: 32),
+              },
+            ),
+            const SizedBox(height: 32),
 
-          _buildSectionHeader('PRIVACY'),
-          const SizedBox(height: 12),
-          _buildNavigationSetting(
-            'App Passcode',
-            _pinIsSet ? 'Change' : 'Set',
-            onTap: _openPasscodePage,
-          ),
-          const SizedBox(height: 16),
-          _buildToggleSetting(
-            'Hide Previews',
-            hidePreviewsEnabled,
-            (value) => setState(() => hidePreviewsEnabled = value),
-          ),
-          const SizedBox(height: 32),
+            // NOTIFICATIONS
+            _buildSectionHeader('NOTIFICATIONS'),
+            const SizedBox(height: 12),
+            _buildTimeSetting(
+              'Daily Reminder',
+              dailyReminderTime,
+              () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: dailyReminderTime,
+                );
+                if (picked != null) {
+                  setState(() => dailyReminderTime = picked);
+                  if (remindersEnabled) {
+                    await NotificationService.instance.scheduleDailyReminder(
+                      hour: picked.hour,
+                      minute: picked.minute,
+                    );
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildToggleSetting(
+              'Reminders Enabled',
+              remindersEnabled,
+              (value) async {
+                setState(() => remindersEnabled = value);
+                if (value) {
+                  await NotificationService.instance.scheduleDailyReminder(
+                    hour: dailyReminderTime.hour,
+                    minute: dailyReminderTime.minute,
+                  );
+                } else {
+                  await NotificationService.instance.cancelDailyReminder();
+                }
+              },
+            ),
+            const SizedBox(height: 32),
 
-          _buildSectionHeader('ACCOUNT'),
-          const SizedBox(height: 12),
-          _buildNavigationSetting('Profile Name', 'Arianna'),
-          const SizedBox(height: 16),
-          _buildTappableSetting('Reset Settings', onTap: _showResetDialog),
-          const SizedBox(height: 16),
-          _buildDeleteAccountSetting(),
-          const SizedBox(height: 32),
-        ],
+            // PRIVACY
+            _buildSectionHeader('PRIVACY'),
+            const SizedBox(height: 12),
+            _buildNavigationSetting(
+              'App Passcode',
+              _pinIsSet ? 'Change' : 'Set',
+              onTap: _openPasscodePage,
+            ),
+            const SizedBox(height: 16),
+            _buildToggleSetting(
+              'Hide Previews',
+              hidePreviewsEnabled,
+              (value) => setState(() => hidePreviewsEnabled = value),
+            ),
+            const SizedBox(height: 32),
+
+             // ACCOUNT
+            _buildSectionHeader('ACCOUNT'),
+            const SizedBox(height: 12),
+
+            _buildNavigationSetting('Profile Name', 'Arianna'),
+            const SizedBox(height: 16),
+
+            _buildTappableSetting('Reset Settings', onTap: _showResetDialog),
+            const SizedBox(height: 16),
+
+            // NEW LOG OUT BUTTON FIX LATER
+            _buildTappableSetting(
+              'Log Out',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged out')),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+
+            _buildDeleteAccountSetting(),
+            const SizedBox(height: 32),
+
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: selectedAccentColor,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
-        fontFamily: selectedFontFamily,
-      ),
-    );
-  }
+  // UI BUILDERS
 
-  Widget _buildSettingLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        color: textColor,
-        fontSize: baseFontSize,
-        fontWeight: FontWeight.w500,
-        fontFamily: selectedFontFamily,
-      ),
-    );
-  }
+  Widget _buildSectionHeader(String title) => Text(
+        title,
+        style: TextStyle(
+          color: selectedAccentColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+          fontFamily: selectedFontFamily,
+        ),
+      );
 
+  Widget _buildSettingLabel(String label) => Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontSize: baseFontSize,
+          fontWeight: FontWeight.w500,
+          fontFamily: selectedFontFamily,
+        ),
+      );
+
+  // RESTORED THEME OPTION — wide, equal-width boxes
   Widget _buildThemeOption(String theme, IconData icon) {
     final isSelected = selectedTheme == theme;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => selectedTheme = theme),
@@ -437,9 +484,11 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           child: Column(
             children: [
-              Icon(icon,
-                  color: isSelected ? Colors.white : secondaryTextColor,
-                  size: 24),
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : secondaryTextColor,
+                size: 24,
+              ),
               const SizedBox(height: 4),
               Text(
                 theme,
@@ -475,11 +524,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildDropdownSetting(
-    String label,
-    String value,
-    List<String> options,
-    void Function(String?) onChanged,
-  ) {
+      String label, String value, List<String> options, void Function(String?) onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -501,28 +546,24 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             dropdownColor: cardColor,
             onChanged: onChanged,
-            items: options.map((String option) {
-              return DropdownMenuItem<String>(
-                value: option,
-                child: Text(option,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: baseFontSize,
-                      fontFamily: selectedFontFamily,
-                    )),
-              );
-            }).toList(),
+            items: options
+                .map((option) => DropdownMenuItem<String>(
+                      value: option,
+                      child: Text(option,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: baseFontSize,
+                            fontFamily: selectedFontFamily,
+                          )),
+                    ))
+                .toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildToggleSetting(
-    String label,
-    bool value,
-    void Function(bool) onChanged,
-  ) {
+  Widget _buildToggleSetting(String label, bool value, void Function(bool) onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -530,17 +571,13 @@ class _SettingsPageState extends State<SettingsPage> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: selectedAccentColor,
+          activeColor: selectedAccentColor,
         ),
       ],
     );
   }
 
-  Widget _buildTimeSetting(
-    String label,
-    TimeOfDay time,
-    VoidCallback onTap,
-  ) {
+  Widget _buildTimeSetting(String label, TimeOfDay time, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Row(
@@ -560,8 +597,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNavigationSetting(String label, String value,
-      {VoidCallback? onTap}) {
+  Widget _buildNavigationSetting(String label, String value, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap ?? () {},
       child: Row(
@@ -571,12 +607,14 @@ class _SettingsPageState extends State<SettingsPage> {
           Row(
             children: [
               if (value.isNotEmpty)
-                Text(value,
-                    style: TextStyle(
-                      color: secondaryTextColor,
-                      fontSize: baseFontSize,
-                      fontFamily: selectedFontFamily,
-                    )),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: secondaryTextColor,
+                    fontSize: baseFontSize,
+                    fontFamily: selectedFontFamily,
+                  ),
+                ),
               const SizedBox(width: 4),
               Icon(Icons.chevron_right,
                   color: secondaryTextColor.withOpacity(0.5), size: 20),
@@ -600,6 +638,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+  
+  
 
   Widget _buildDeleteAccountSetting() {
     return GestureDetector(
@@ -616,10 +656,11 @@ class _SettingsPageState extends State<SettingsPage> {
               fontFamily: selectedFontFamily,
             ),
           ),
-          Icon(Icons.chevron_right,
-              color: secondaryTextColor.withOpacity(0.5), size: 20),
+          Icon(Icons.chevron_right, color: secondaryTextColor.withOpacity(0.5), size: 20),
         ],
       ),
     );
   }
+
 }
+
