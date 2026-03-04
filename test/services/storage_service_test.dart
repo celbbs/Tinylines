@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:tiny_lines/models/journal_entry.dart';
-import 'package:tiny_lines/services/storage_service.dart';
+import 'package:tinylines/models/journal_entry.dart';
+import 'package:tinylines/services/storage_service.dart';
 
 /// Fake path provider that returns a temporary directory for tests.
 class FakePathProviderPlatform extends Fake

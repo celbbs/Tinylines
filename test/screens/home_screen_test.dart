@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:tiny_lines/models/journal_entry.dart';
-import 'package:tiny_lines/providers/journal_provider.dart';
-import 'package:tiny_lines/screens/home_screen.dart';
-import 'package:tiny_lines/screens/entry_editor_screen.dart';
-import 'package:tiny_lines/utils/app_theme.dart';
+import 'package:tinylines/models/journal_entry.dart';
+import 'package:tinylines/providers/journal_provider.dart';
+import 'package:tinylines/screens/home_screen.dart';
+import 'package:tinylines/screens/entry_editor_screen.dart';
+import 'package:tinylines/utils/app_theme.dart';
 
 /// A fake JournalProvider that lets tests control state without file I/O.
 class FakeJournalProvider extends JournalProvider {
