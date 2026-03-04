@@ -17,9 +17,8 @@ class JournalProvider with ChangeNotifier {
   /// Gets all dates that have entries (for calendar highlighting)
   Set<DateTime> get entryDates => _entries.map((e) => e.date).toSet();
 
-//custom storage
-  JournalProvider({StorageService? storage})
-      : _storageService = storage ?? StorageService() {
+  JournalProvider({StorageService? storageService})
+      : _storageService = storageService ?? StorageService() {
     loadEntries();
   }
 
@@ -137,7 +136,7 @@ class JournalProvider with ChangeNotifier {
 
     final updatedEntry = existingEntry.copyWith(
       content: newContent,
-      imagePath: removeImage ? null : existingEntry.imagePath,
+      clearImagePath: removeImage,
     );
 
     await saveEntry(updatedEntry, imageFile: newImageFile);

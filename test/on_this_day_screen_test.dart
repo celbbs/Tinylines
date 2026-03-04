@@ -42,7 +42,7 @@ void main() {
     late JournalProvider provider;
 
     setUp(() {
-      provider = JournalProvider(storage: MockStorageService());
+      provider = JournalProvider(storageService: MockStorageService());
     });
 
     testWidgets('displays entries that match today', (tester) async {

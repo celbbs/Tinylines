@@ -3,7 +3,7 @@
 *"A lightweight journaling app designed to help users capture one meaningful thought or memory each day through short entries and optional photos."*
 
 **Team:** Celia Babbs, Kuenaokeao Borling, Charles Loughin, Arianna Joffrion
-**Course:** CS461-400 Fall 2025
+**Course:** CS461-400 Fall/Winter/Spring 2025-2026
 **Institution:** Oregon State University
 
 ---
@@ -21,11 +21,6 @@ The core additions beyond the base Flutter project setup are as follows:
 - lib/screens/home_screen.dart - Calendar view with recent entries list
 - lib/screens/entry_editor_screen.dart - Entry creation/editing with photo support
 - lib/utils/app_theme.dart - Minimalist design system with calm colors
-
-## TODO
-- [ ] add unit tests
-- [ ] add new entry button should open today's note if it already exists, instead of opening a blank note which will overwrite the existing note if saved
-
 
 ## Resources
 
