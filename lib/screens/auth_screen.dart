@@ -1,9 +1,6 @@
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../services/auth_service.dart';
-import 'home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -44,7 +41,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     _slide = Tween<Offset>(
       begin: const Offset(0, 0.08),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOutCubic));
+    ).animate(
+      CurvedAnimation(parent: _cardController, curve: Curves.easeOutCubic),
+    );
 
     _cardController.forward();
   }
@@ -58,9 +57,36 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  String _getErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-not-found':
+        return 'No account was found with that email.';
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Incorrect email or password.';
+      case 'email-already-in-use':
+        return 'That email is already in use.';
+      case 'weak-password':
+        return 'Password should be at least 6 characters.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      default:
+        return e.message ?? 'Something went wrong. Please try again.';
+    }
+  }
+
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _error = 'Please enter both email and password.';
+      });
+      return;
+    }
 
     setState(() {
       _isBusy = true;
@@ -68,24 +94,27 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     });
 
     try {
-      final auth = context.read<AuthService>();
-
       if (_isLogin) {
-        await auth.signIn(email: email, password: password);
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
       } else {
-        await auth.register(email: email, password: password);
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
       }
 
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _error = _getErrorMessage(e));
     } catch (e) {
-      final msg = e.toString().replaceFirst('Exception: ', '');
-      setState(() => _error = msg);
+      setState(() => _error = 'Something went wrong. Please try again.');
     } finally {
-      if (mounted) setState(() => _isBusy = false);
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
     }
   }
 
@@ -96,7 +125,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     return AnimatedBuilder(
       animation: _bgController,
       builder: (context, _) {
-        // Subtle animated gradient shift (professional, not loud).
         final t = _bgController.value;
         final a = Color.lerp(const Color(0xFF0B1026), const Color(0xFF1B1145), t)!;
         final b = Color.lerp(const Color(0xFF20104A), const Color(0xFF0E2A53), (t + 0.35) % 1.0)!;
@@ -106,7 +134,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           resizeToAvoidBottomInset: true,
           body: Stack(
             children: [
-              // Background gradient
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -117,7 +144,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                 ),
               ),
 
-              // Blurred blobs (glassmorphism)
               _BlobLight(
                 alignment: const Alignment(-0.85, -0.75),
                 diameter: size.width * 0.95,
@@ -140,10 +166,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
                       Row(
                         children: [
-                          _AppMark(),
+                          const _AppMark(),
                           const SizedBox(width: 12),
                           const Expanded(
                             child: Column(
@@ -175,7 +200,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
                       const SizedBox(height: 26),
 
-                      // Big headline
                       const Text(
                         'Write one line.\nKeep the streak.',
                         style: TextStyle(
@@ -199,7 +223,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
                       const SizedBox(height: 26),
 
-                      // Glass card
                       FadeTransition(
                         opacity: _fade,
                         child: SlideTransition(
@@ -240,7 +263,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                   trailing: IconButton(
                                     onPressed: () => setState(() => _obscure = !_obscure),
                                     icon: Icon(
-                                      _obscure ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                      _obscure
+                                          ? Icons.visibility_rounded
+                                          : Icons.visibility_off_rounded,
                                       color: Colors.white70,
                                     ),
                                   ),
@@ -271,7 +296,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                 const SizedBox(height: 12),
 
                                 const Text(
-                                  'Auth is scaffolded for now.\nFirebase can be plugged in later with no UI changes.',
+                                  'Secure sign in with Firebase.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white60,
@@ -288,7 +313,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
                       const SizedBox(height: 18),
 
-                      // Footer microcopy
                       const Center(
                         child: Text(
                           'By continuing, you agree to keep your journal secure.',
@@ -312,6 +336,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 }
 
 class _AppMark extends StatelessWidget {
+  const _AppMark();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -499,10 +525,11 @@ class _Field extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 56,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withOpacity(0.10),
-        border: Border.all(color: Colors.white.withOpacity(0.14)),
+        color: const Color(0xFF111827),
+        border: Border.all(color: Colors.white24),
       ),
       child: TextField(
         controller: controller,
@@ -510,12 +537,24 @@ class _Field extends StatelessWidget {
         obscureText: obscureText,
         textInputAction: textInputAction,
         onSubmitted: onSubmitted,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        cursorColor: Colors.white,
+        keyboardAppearance: Brightness.dark,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
         decoration: InputDecoration(
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 16,
+          ),
           hintText: hintText,
-          hintStyle: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w600),
+          hintStyle: const TextStyle(
+            color: Colors.white60,
+            fontWeight: FontWeight.w600,
+          ),
           prefixIcon: leading == null
               ? null
               : Icon(leading, color: Colors.white70),
@@ -541,13 +580,18 @@ class _PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF8A5CFF),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 10,
           shadowColor: Colors.black.withOpacity(0.35),
         ),
         child: Text(
           text,
-          style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.2),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.2,
+          ),
         ),
       ),
     );

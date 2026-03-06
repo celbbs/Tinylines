@@ -100,18 +100,24 @@ class JournalEntry {
 
   /// Creates entry from JSON map
   factory JournalEntry.fromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
     return JournalEntry(
-      id: json['id'] as String,
-      date: DateTime.parse(json['date'] as String),
-      content: json['content'] as String,
+      id: (json['id'] as String?) ?? '',
+      date: DateTime.tryParse((json['date'] as String?) ?? '') ?? now,
+      content: (json['content'] as String?) ?? '',
       imagePath: json['imagePath'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt:
+          DateTime.tryParse((json['createdAt'] as String?) ?? '') ?? now,
+      updatedAt:
+          DateTime.tryParse((json['updatedAt'] as String?) ?? '') ?? now,
     );
   }
 
   @override
-  String toString() => 'JournalEntry(id: $id, date: $formattedDate, content length: ${content.length})';
+  String toString() {
+    return 'JournalEntry(id: $id, date: $formattedDate, content length: ${content.length})';
+  }
 
   @override
   bool operator ==(Object other) {

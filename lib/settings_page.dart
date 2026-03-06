@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'tutorial_page.dart';
 import 'passcode_page.dart';
 import '../services/notification_service.dart';
@@ -59,6 +60,24 @@ class _SettingsPageState extends State<SettingsPage> {
     final pin = await _storage.read(key: 'app_passcode');
     if (mounted) {
       setState(() => _pinIsSet = pin != null && pin.isNotEmpty);
+    }
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logged out')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to log out')),
+      );
     }
   }
 
@@ -175,8 +194,10 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text('Reset Settings',
-            style: TextStyle(color: textColor, fontFamily: selectedFontFamily)),
+        title: Text(
+          'Reset Settings',
+          style: TextStyle(color: textColor, fontFamily: selectedFontFamily),
+        ),
         content: Text(
           'This will restore all settings to their defaults:\n\n'
           '• Theme: Dark\n'
@@ -215,8 +236,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SnackBar(content: Text('Settings reset to defaults.')),
               );
             },
-            child: const Text('Reset',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Reset',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -228,8 +251,10 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text('Delete Account',
-            style: TextStyle(color: Colors.red, fontFamily: selectedFontFamily)),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(color: Colors.red, fontFamily: selectedFontFamily),
+        ),
         content: Text(
           'Are you sure you want to permanently delete your account? '
           'All your journal entries and settings will be lost and cannot be recovered.',
@@ -248,8 +273,10 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -284,7 +311,6 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSectionHeader('APPEARANCE'),
             const SizedBox(height: 12),
 
-            // THEME — restored wide boxes
             _buildSettingLabel('Theme'),
             const SizedBox(height: 8),
             Row(
@@ -298,7 +324,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 20),
 
-            // ACCENT COLOR
             _buildSettingLabel('Accent Color'),
             const SizedBox(height: 8),
             SingleChildScrollView(
@@ -309,7 +334,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 20),
 
-            // FONT SIZE
             _buildDropdownSetting(
               'Font Size',
               selectedFontSize,
@@ -318,7 +342,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 16),
 
-            // FONT STYLE
             _buildDropdownSetting(
               'Font Style',
               selectedFontStyle,
@@ -327,7 +350,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-            // JOURNALING
             _buildSectionHeader('JOURNALING'),
             const SizedBox(height: 12),
             _buildToggleSetting(
@@ -344,7 +366,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-            // TUTORIAL
             _buildSectionHeader('APP TUTORIAL'),
             const SizedBox(height: 12),
             _buildTappableSetting(
@@ -360,7 +381,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-            // NOTIFICATIONS
             _buildSectionHeader('NOTIFICATIONS'),
             const SizedBox(height: 12),
             _buildTimeSetting(
@@ -400,7 +420,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-            // PRIVACY
             _buildSectionHeader('PRIVACY'),
             const SizedBox(height: 12),
             _buildNavigationSetting(
@@ -416,7 +435,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-             // ACCOUNT
             _buildSectionHeader('ACCOUNT'),
             const SizedBox(height: 12),
 
@@ -426,27 +444,19 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildTappableSetting('Reset Settings', onTap: _showResetDialog),
             const SizedBox(height: 16),
 
-            // NEW LOG OUT BUTTON FIX LATER
             _buildTappableSetting(
               'Log Out',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out')),
-                );
-              },
+              onTap: _signOut,
             ),
             const SizedBox(height: 16),
 
             _buildDeleteAccountSetting(),
             const SizedBox(height: 32),
-
           ],
         ),
       ),
     );
   }
-
-  // UI BUILDERS
 
   Widget _buildSectionHeader(String title) => Text(
         title,
@@ -469,7 +479,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
 
-  // RESTORED THEME OPTION — wide, equal-width boxes
   Widget _buildThemeOption(String theme, IconData icon) {
     final isSelected = selectedTheme == theme;
 
@@ -524,7 +533,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildDropdownSetting(
-      String label, String value, List<String> options, void Function(String?) onChanged) {
+    String label,
+    String value,
+    List<String> options,
+    void Function(String?) onChanged,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -547,15 +560,19 @@ class _SettingsPageState extends State<SettingsPage> {
             dropdownColor: cardColor,
             onChanged: onChanged,
             items: options
-                .map((option) => DropdownMenuItem<String>(
-                      value: option,
-                      child: Text(option,
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: baseFontSize,
-                            fontFamily: selectedFontFamily,
-                          )),
-                    ))
+                .map(
+                  (option) => DropdownMenuItem<String>(
+                    value: option,
+                    child: Text(
+                      option,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: baseFontSize,
+                        fontFamily: selectedFontFamily,
+                      ),
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -563,7 +580,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildToggleSetting(String label, bool value, void Function(bool) onChanged) {
+  Widget _buildToggleSetting(
+    String label,
+    bool value,
+    void Function(bool) onChanged,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -616,8 +637,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
               const SizedBox(width: 4),
-              Icon(Icons.chevron_right,
-                  color: secondaryTextColor.withOpacity(0.5), size: 20),
+              Icon(
+                Icons.chevron_right,
+                color: secondaryTextColor.withOpacity(0.5),
+                size: 20,
+              ),
             ],
           ),
         ],
@@ -632,14 +656,15 @@ class _SettingsPageState extends State<SettingsPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildSettingLabel(label),
-          Icon(Icons.chevron_right,
-              color: secondaryTextColor.withOpacity(0.5), size: 20),
+          Icon(
+            Icons.chevron_right,
+            color: secondaryTextColor.withOpacity(0.5),
+            size: 20,
+          ),
         ],
       ),
     );
   }
-  
-  
 
   Widget _buildDeleteAccountSetting() {
     return GestureDetector(
@@ -656,11 +681,13 @@ class _SettingsPageState extends State<SettingsPage> {
               fontFamily: selectedFontFamily,
             ),
           ),
-          Icon(Icons.chevron_right, color: secondaryTextColor.withOpacity(0.5), size: 20),
+          Icon(
+            Icons.chevron_right,
+            color: secondaryTextColor.withOpacity(0.5),
+            size: 20,
+          ),
         ],
       ),
     );
   }
-
 }
-

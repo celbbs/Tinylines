@@ -6,8 +6,7 @@ import '../models/journal_entry.dart';
 import '../utils/app_theme.dart';
 import 'entry_editor_screen.dart';
 
-class OnThisDayScreen extends StatelessWidget
-{
+class OnThisDayScreen extends StatelessWidget {
   const OnThisDayScreen({super.key});
 
   @override
@@ -73,6 +72,10 @@ class OnThisDayScreen extends StatelessWidget
   }
 
   Widget _buildEntryCard(BuildContext context, JournalEntry entry) {
+    final hasUsableImage = entry.imagePath != null &&
+        entry.imagePath!.isNotEmpty &&
+        File(entry.imagePath!).existsSync();
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
@@ -105,7 +108,7 @@ class OnThisDayScreen extends StatelessWidget
                     ),
                   ),
                   const Spacer(),
-                  if (entry.imagePath != null)
+                  if (hasUsableImage)
                     const Icon(
                       Icons.image,
                       size: 16,
@@ -124,7 +127,7 @@ class OnThisDayScreen extends StatelessWidget
                   color: AppTheme.textPrimary,
                 ),
               ),
-              if (entry.imagePath != null) ...[
+              if (hasUsableImage) ...[
                 const SizedBox(height: AppTheme.spacingS),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppTheme.radiusS),
