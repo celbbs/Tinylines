@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:tiny_lines/models/journal_entry.dart';
-import 'package:tiny_lines/providers/journal_provider.dart';
-import 'package:tiny_lines/services/storage_service.dart';
+import 'package:tinylines/models/journal_entry.dart';
+import 'package:tinylines/providers/journal_provider.dart';
+import 'package:tinylines/services/storage_service.dart';
 
 import 'journal_provider_test.mocks.dart';
 

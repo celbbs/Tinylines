@@ -212,6 +212,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
       controller: _contentController,
       maxLines: null,
       minLines: 10,
+      maxLength: 500,
       autofocus: _isNewEntry,
       style: Theme.of(context).textTheme.bodyLarge,
       decoration: const InputDecoration(

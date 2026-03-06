@@ -28,5 +28,7 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>TinyLines needs access to your photo library to attach photos to journal entries.</string>
 </dict>
 </plist>
