@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/journal_entry.dart';
-import '../services/storage_service.dart';
+import '../services/firestore_service.dart';
 
 /// Provider for managing journal entries state
 class JournalProvider with ChangeNotifier {
-  final StorageService _storageService;
+  final FirestoreService _firestoreService;
   List<JournalEntry> _entries = [];
   bool _isLoading = false;
   String? _error;
@@ -17,19 +17,25 @@ class JournalProvider with ChangeNotifier {
   /// Gets all dates that have entries (for calendar highlighting)
   Set<DateTime> get entryDates => _entries.map((e) => e.date).toSet();
 
-  JournalProvider({StorageService? storageService})
-      : _storageService = storageService ?? StorageService() {
-    loadEntries();
+  JournalProvider({FirestoreService? firestoreService})
+      : _firestoreService = firestoreService ?? FirestoreService();
+
+  /// Resets provider state when auth status changes
+  void resetForAuthChange() {
+    _entries = [];
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
   }
 
-  /// Loads all journal entries from storage
+  /// Loads all journal entries from Firestore
   Future<void> loadEntries() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _entries = await _storageService.loadAllEntries();
+      _entries = await _firestoreService.loadAllEntries();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -66,22 +72,13 @@ class JournalProvider with ChangeNotifier {
   }
 
   /// Adds or updates a journal entry
+  /// imageFile is accepted to preserve compatibility with the current editor UI.
   Future<void> saveEntry(JournalEntry entry, {File? imageFile}) async {
     try {
-      // Handle image if provided
-      String? imagePath = entry.imagePath;
-      if (imageFile != null) {
-        imagePath = await _storageService.saveImage(imageFile, entry.id);
-      }
+      final entryToSave = entry;
 
-      // Update entry with image path
-      final entryToSave = imagePath != entry.imagePath
-          ? entry.copyWith(imagePath: imagePath)
-          : entry;
+      await _firestoreService.saveEntry(entryToSave);
 
-      await _storageService.saveEntry(entryToSave);
-
-      // Update local state
       final index = _entries.indexWhere((e) => e.id == entryToSave.id);
       if (index >= 0) {
         _entries[index] = entryToSave;
@@ -129,11 +126,6 @@ class JournalProvider with ChangeNotifier {
       throw Exception('Entry not found');
     }
 
-    // Handle image removal
-    if (removeImage && existingEntry.imagePath != null) {
-      await _storageService.deleteImage(existingEntry.imagePath!);
-    }
-
     final updatedEntry = existingEntry.copyWith(
       content: newContent,
       clearImagePath: removeImage,
@@ -145,7 +137,7 @@ class JournalProvider with ChangeNotifier {
   /// Deletes an entry
   Future<void> deleteEntry(String id) async {
     try {
-      await _storageService.deleteEntry(id);
+      await _firestoreService.deleteEntry(id);
       _entries.removeWhere((e) => e.id == id);
       notifyListeners();
     } catch (e) {

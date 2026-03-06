@@ -6,6 +6,7 @@ import '../models/journal_entry.dart';
 import '../utils/app_theme.dart';
 import 'entry_editor_screen.dart';
 import 'on_this_day_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,23 +29,30 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-appBar: AppBar(
-  title: const Text('TinyLines'),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.auto_stories),
-      tooltip: 'On This Day',
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const OnThisDayScreen(),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.logout),
+          tooltip: 'Sign out',
+          onPressed: () async {
+            await FirebaseAuth.instance.signOut();
+          },
+        ),
+        title: const Text('TinyLines'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_stories),
+            tooltip: 'On This Day',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const OnThisDayScreen(),
+                ),
+              );
+            },
           ),
-        );
-      },
-    ),
-  ],
-),
+        ],
+      ),
       body: Consumer<JournalProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -99,7 +107,6 @@ appBar: AppBar(
           _focusedDay = focusedDay;
         },
         calendarStyle: CalendarStyle(
-          // Today's date styling
           todayDecoration: BoxDecoration(
             color: AppTheme.accentColor.withValues(alpha: 0.3),
             shape: BoxShape.circle,
@@ -108,7 +115,6 @@ appBar: AppBar(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.w600,
           ),
-          // Selected day styling
           selectedDecoration: const BoxDecoration(
             color: AppTheme.primaryColor,
             shape: BoxShape.circle,
@@ -117,12 +123,10 @@ appBar: AppBar(
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
-          // Days with entries
           markerDecoration: const BoxDecoration(
             color: AppTheme.successColor,
             shape: BoxShape.circle,
           ),
-          // Default day styling
           defaultTextStyle: const TextStyle(
             color: AppTheme.textPrimary,
           ),
@@ -162,7 +166,6 @@ appBar: AppBar(
             fontSize: 12,
           ),
         ),
-        // Event loader - shows dots for days with entries
         eventLoader: (day) {
           return provider.hasEntryForDate(day) ? [true] : [];
         },
@@ -274,10 +277,8 @@ appBar: AppBar(
     final todayEntry = provider.getEntryForDate(today);
 
     if (todayEntry != null) {
-      // Entry already exists for today, open it for editing
       _viewEntry(todayEntry);
     } else {
-      // No entry for today, create new one
       Navigator.push(
         context,
         MaterialPageRoute(

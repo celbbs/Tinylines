@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/journal_provider.dart';
-import 'screens/home_screen.dart';
 import 'utils/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/notification_service.dart';
+import 'auth/auth_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ class TinyLinesApp extends StatelessWidget {
         title: 'TinyLines',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
-        home: const HomeScreen(),
+        home: const AuthGate(),
       ),
     );
   }
