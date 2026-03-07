@@ -50,6 +50,13 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
 
   bool get _isNewEntry => widget.entry == null;
 
+  bool get _hasUsableExistingImage {
+    if (_existingImagePath == null || _existingImagePath!.isEmpty) {
+      return false;
+    }
+    return File(_existingImagePath!).existsSync();
+  }
+
   String get _title {
     if (widget.entry != null) {
       return widget.entry!.formattedDate;
@@ -119,7 +126,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   }
 
   Widget _buildImageSection() {
-    final hasImage = _selectedImage != null || _existingImagePath != null;
+    final hasImage = _selectedImage != null || _hasUsableExistingImage;
 
     if (!hasImage) {
       return InkWell(
@@ -226,7 +233,10 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   }
 
   Widget _buildBottomBar() {
-    final wordCount = _contentController.text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    final wordCount = _contentController.text
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .length;
     final charCount = _contentController.text.length;
 
     return Container(
@@ -313,9 +323,10 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
     try {
       final provider = Provider.of<JournalProvider>(context, listen: false);
       final content = _contentController.text;
+      final messenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
 
       if (_isNewEntry) {
-        // Create new entry
         if (widget.date != null) {
           await provider.createEntryForDate(
             widget.date!,
@@ -326,7 +337,6 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
           await provider.createEntry(content, imageFile: _selectedImage);
         }
       } else {
-        // Update existing entry
         await provider.updateEntry(
           widget.entry!.id,
           content,
@@ -335,16 +345,16 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
         );
       }
 
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Entry saved'),
-            backgroundColor: AppTheme.successColor,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      if (!mounted) return;
+
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Entry saved'),
+          backgroundColor: AppTheme.successColor,
+          duration: Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       _showErrorSnackBar('Failed to save entry: $e');
     } finally {
@@ -359,18 +369,21 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   Future<void> _deleteEntry() async {
     try {
       final provider = Provider.of<JournalProvider>(context, listen: false);
+      final messenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
+
       await provider.deleteEntry(widget.entry!.id);
 
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Entry deleted'),
-            backgroundColor: AppTheme.errorColor,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      if (!mounted) return;
+
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Entry deleted'),
+          backgroundColor: AppTheme.errorColor,
+          duration: Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       _showErrorSnackBar('Failed to delete entry: $e');
     }

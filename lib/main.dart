@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/journal_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/auth_screen.dart';
 import 'tutorial_page.dart';
 import 'utils/app_theme.dart';
 import 'utils/tutorial_helper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -21,15 +23,11 @@ void main() async {
   // Initialize notifications
   await NotificationService.instance.init();
 
-  // Check if tutorial was seen
-  bool seenTutorial = await TutorialHelper.hasSeenTutorial();
-
-  runApp(TinyLinesApp(showTutorial: !seenTutorial));
+  runApp(const TinyLinesApp());
 }
 
 class TinyLinesApp extends StatelessWidget {
-  final bool showTutorial;
-  const TinyLinesApp({super.key, required this.showTutorial});
+  const TinyLinesApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +37,118 @@ class TinyLinesApp extends StatelessWidget {
         title: 'TinyLines',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
-        home: showTutorial ? const TutorialPage() : const HomeScreen(),
+        home: const AuthGate(),
       ),
+    );
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  String? _lastUserId;
+
+  Future<void> _handleSignedInUser(BuildContext context, User user) async {
+    final provider = context.read<JournalProvider>();
+
+    if (_lastUserId != user.uid) {
+      _lastUserId = user.uid;
+      provider.resetForAuthChange();
+      await provider.loadEntries();
+    }
+  }
+
+  void _handleSignedOutUser(BuildContext context) {
+    if (_lastUserId != null) {
+      _lastUserId = null;
+      context.read<JournalProvider>().resetForAuthChange();
+    }
+  }
+
+  Future<bool> _shouldShowTutorial() async {
+    final seenTutorial = await TutorialHelper.hasSeenTutorial();
+    return !seenTutorial;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final user = snapshot.data;
+
+        if (user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _handleSignedOutUser(context);
+            }
+          });
+          return const AuthScreen();
+        }
+
+        return FutureBuilder<void>(
+          future: _handleSignedInUser(context, user),
+          builder: (context, loadSnapshot) {
+            if (loadSnapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            if (loadSnapshot.hasError) {
+              return const Scaffold(
+                body: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Failed to load journal entries.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return FutureBuilder<bool>(
+              future: _shouldShowTutorial(),
+              builder: (context, tutorialSnapshot) {
+                if (tutorialSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                if (tutorialSnapshot.hasError) {
+                  return const HomeScreen();
+                }
+
+                final showTutorial = tutorialSnapshot.data ?? false;
+
+                return showTutorial
+                    ? const TutorialPage()
+                    : const HomeScreen();
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

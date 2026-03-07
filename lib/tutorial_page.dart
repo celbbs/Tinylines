@@ -4,7 +4,7 @@ import 'package:tinylines/utils/tutorial_helper.dart';
 import '/screens/home_screen.dart';
 
 class TutorialPage extends StatefulWidget {
-  const TutorialPage({Key? key}) : super(key: key);
+  const TutorialPage({super.key});
 
   @override
   State<TutorialPage> createState() => _TutorialPageState();
@@ -73,9 +73,12 @@ class _TutorialPageState extends State<TutorialPage> {
                 child: ElevatedButton(
                   onPressed: () async {
                     await TutorialHelper.setTutorialSeen();
+                    if (!mounted) return;
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (_) => HomeScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const HomeScreen(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -89,7 +92,7 @@ class _TutorialPageState extends State<TutorialPage> {
                       borderRadius: BorderRadius.circular(AppTheme.radiusM),
                     ),
                   ),
-                  child: Text('Get Started'),
+                  child: const Text('Get Started'),
                 ),
               ),
             )
@@ -123,8 +126,9 @@ class _TutorialPageState extends State<TutorialPage> {
                   ),
                   TextButton(
                     onPressed: () => _controller.nextPage(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.easeInOut),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    ),
                     child: Text(
                       'Next',
                       style: TextStyle(color: AppTheme.primaryColor),

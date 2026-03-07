@@ -54,8 +54,10 @@ dependencies:
   # Image picker for photo attachments
   image_picker: ^1.1.2
 
-  firebase_core: ^3.0.0
-  firebase_messaging: ^15.0.0
+  firebase_core: ^4.1.1
+  firebase_auth: ^6.0.2
+  cloud_firestore: ^6.0.1
+  firebase_messaging: ^16.0.1
   flutter_local_notifications: ^17.0.0
 
 dev_dependencies:

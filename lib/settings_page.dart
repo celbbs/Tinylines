@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'tutorial_page.dart';
 import 'passcode_page.dart';
 import '../services/notification_service.dart';
@@ -39,7 +40,6 @@ class _SettingsPageState extends State<SettingsPage> {
   static const bool _defaultRemindersEnabled = true;
   static const bool _defaultHidePreviews = false;
 
-  // accent colors
   final List<Color> accentColors = [
     const Color(0xFF4A90E2),
     const Color(0xFF50C878),
@@ -49,16 +49,99 @@ class _SettingsPageState extends State<SettingsPage> {
     const Color(0xFF1ABC9C),
   ];
 
+  User? get _currentUser => FirebaseAuth.instance.currentUser;
+
+  String get _profileName {
+    final user = _currentUser;
+    if (user == null) return 'Not signed in';
+    if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
+      return user.displayName!;
+    }
+    if (user.email != null && user.email!.trim().isNotEmpty) {
+      return user.email!;
+    }
+    return user.uid;
+  }
+
+  String _key(String name) {
+    final uid = _currentUser?.uid ?? 'guest';
+    return 'settings_${uid}_$name';
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadSettings();
     _checkPinStatus();
   }
 
+  Future<void> _loadSettings() async {
+    final theme = await _storage.read(key: _key('theme'));
+    final fontSize = await _storage.read(key: _key('fontSize'));
+    final fontStyle = await _storage.read(key: _key('fontStyle'));
+    final dailyPrompt = await _storage.read(key: _key('dailyPromptEnabled'));
+    final autoSave = await _storage.read(key: _key('autoSaveInterval'));
+    final reminders = await _storage.read(key: _key('remindersEnabled'));
+    final hidePreviews = await _storage.read(key: _key('hidePreviewsEnabled'));
+    final reminderHour = await _storage.read(key: _key('reminderHour'));
+    final reminderMinute = await _storage.read(key: _key('reminderMinute'));
+    final accentColorValue = await _storage.read(key: _key('accentColor'));
+
+    if (!mounted) return;
+
+    setState(() {
+      selectedTheme = theme ?? _defaultTheme;
+      selectedFontSize = fontSize ?? _defaultFontSize;
+      selectedFontStyle = fontStyle ?? _defaultFontStyle;
+      dailyPromptEnabled = dailyPrompt == null
+          ? _defaultDailyPrompt
+          : dailyPrompt == 'true';
+      autoSaveInterval = autoSave ?? _defaultAutoSave;
+      remindersEnabled = reminders == null
+          ? _defaultRemindersEnabled
+          : reminders == 'true';
+      hidePreviewsEnabled = hidePreviews == null
+          ? _defaultHidePreviews
+          : hidePreviews == 'true';
+
+      if (reminderHour != null && reminderMinute != null) {
+        dailyReminderTime = TimeOfDay(
+          hour: int.tryParse(reminderHour) ?? _defaultReminderTime.hour,
+          minute: int.tryParse(reminderMinute) ?? _defaultReminderTime.minute,
+        );
+      }
+
+      if (accentColorValue != null) {
+        selectedAccentColor =
+            Color(int.tryParse(accentColorValue) ?? _defaultAccentColor.value);
+      }
+    });
+  }
+
+  Future<void> _saveSetting(String key, String value) async {
+    await _storage.write(key: _key(key), value: value);
+  }
+
   Future<void> _checkPinStatus() async {
-    final pin = await _storage.read(key: 'app_passcode');
+    final pin = await _storage.read(key: _key('app_passcode'));
     if (mounted) {
       setState(() => _pinIsSet = pin != null && pin.isNotEmpty);
+    }
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to log out')),
+      );
     }
   }
 
@@ -175,17 +258,12 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text('Reset Settings',
-            style: TextStyle(color: textColor, fontFamily: selectedFontFamily)),
+        title: Text(
+          'Reset Settings',
+          style: TextStyle(color: textColor, fontFamily: selectedFontFamily),
+        ),
         content: Text(
-          'This will restore all settings to their defaults:\n\n'
-          '• Theme: Dark\n'
-          '• Font: Medium / Sans Serif\n'
-          '• Accent Color: Blue\n'
-          '• Daily Prompt: On\n'
-          '• Auto-Save: 30 seconds\n'
-          '• Reminders: On at 7:00 PM\n'
-          '• Hide Previews: Off',
+          'This will restore all settings to their defaults.',
           style: TextStyle(
             color: secondaryTextColor,
             fontSize: baseFontSize,
@@ -198,7 +276,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Text('Cancel', style: TextStyle(color: secondaryTextColor)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               setState(() {
                 selectedTheme = _defaultTheme;
                 selectedAccentColor = _defaultAccentColor;
@@ -210,13 +288,28 @@ class _SettingsPageState extends State<SettingsPage> {
                 remindersEnabled = _defaultRemindersEnabled;
                 hidePreviewsEnabled = _defaultHidePreviews;
               });
+
+              await _saveSetting('theme', selectedTheme);
+              await _saveSetting('accentColor', selectedAccentColor.value.toString());
+              await _saveSetting('fontSize', selectedFontSize);
+              await _saveSetting('fontStyle', selectedFontStyle);
+              await _saveSetting('dailyPromptEnabled', dailyPromptEnabled.toString());
+              await _saveSetting('autoSaveInterval', autoSaveInterval);
+              await _saveSetting('remindersEnabled', remindersEnabled.toString());
+              await _saveSetting('hidePreviewsEnabled', hidePreviewsEnabled.toString());
+              await _saveSetting('reminderHour', dailyReminderTime.hour.toString());
+              await _saveSetting('reminderMinute', dailyReminderTime.minute.toString());
+
+              if (!mounted) return;
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Settings reset to defaults.')),
               );
             },
-            child: const Text('Reset',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Reset',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -228,8 +321,10 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text('Delete Account',
-            style: TextStyle(color: Colors.red, fontFamily: selectedFontFamily)),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(color: Colors.red, fontFamily: selectedFontFamily),
+        ),
         content: Text(
           'Are you sure you want to permanently delete your account? '
           'All your journal entries and settings will be lost and cannot be recovered.',
@@ -248,8 +343,10 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -284,7 +381,6 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSectionHeader('APPEARANCE'),
             const SizedBox(height: 12),
 
-            // THEME — restored wide boxes
             _buildSettingLabel('Theme'),
             const SizedBox(height: 8),
             Row(
@@ -298,7 +394,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 20),
 
-            // ACCENT COLOR
             _buildSettingLabel('Accent Color'),
             const SizedBox(height: 8),
             SingleChildScrollView(
@@ -309,42 +404,50 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 20),
 
-            // FONT SIZE
             _buildDropdownSetting(
               'Font Size',
               selectedFontSize,
               ['Small', 'Medium', 'Large'],
-              (value) => setState(() => selectedFontSize = value!),
+              (value) async {
+                setState(() => selectedFontSize = value!);
+                await _saveSetting('fontSize', selectedFontSize);
+              },
             ),
             const SizedBox(height: 16),
 
-            // FONT STYLE
             _buildDropdownSetting(
               'Font Style',
               selectedFontStyle,
               ['Sans Serif', 'Serif', 'Handwriting'],
-              (value) => setState(() => selectedFontStyle = value!),
+              (value) async {
+                setState(() => selectedFontStyle = value!);
+                await _saveSetting('fontStyle', selectedFontStyle);
+              },
             ),
             const SizedBox(height: 32),
 
-            // JOURNALING
             _buildSectionHeader('JOURNALING'),
             const SizedBox(height: 12),
             _buildToggleSetting(
               'Daily Prompt',
               dailyPromptEnabled,
-              (value) => setState(() => dailyPromptEnabled = value),
+              (value) async {
+                setState(() => dailyPromptEnabled = value);
+                await _saveSetting('dailyPromptEnabled', dailyPromptEnabled.toString());
+              },
             ),
             const SizedBox(height: 16),
             _buildDropdownSetting(
               'Auto-Save',
               autoSaveInterval,
               ['10 seconds', '30 seconds', '60 seconds'],
-              (value) => setState(() => autoSaveInterval = value!),
+              (value) async {
+                setState(() => autoSaveInterval = value!);
+                await _saveSetting('autoSaveInterval', autoSaveInterval);
+              },
             ),
             const SizedBox(height: 32),
 
-            // TUTORIAL
             _buildSectionHeader('APP TUTORIAL'),
             const SizedBox(height: 12),
             _buildTappableSetting(
@@ -360,7 +463,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-            // NOTIFICATIONS
             _buildSectionHeader('NOTIFICATIONS'),
             const SizedBox(height: 12),
             _buildTimeSetting(
@@ -373,6 +475,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
                 if (picked != null) {
                   setState(() => dailyReminderTime = picked);
+                  await _saveSetting('reminderHour', picked.hour.toString());
+                  await _saveSetting('reminderMinute', picked.minute.toString());
+
                   if (remindersEnabled) {
                     await NotificationService.instance.scheduleDailyReminder(
                       hour: picked.hour,
@@ -388,6 +493,8 @@ class _SettingsPageState extends State<SettingsPage> {
               remindersEnabled,
               (value) async {
                 setState(() => remindersEnabled = value);
+                await _saveSetting('remindersEnabled', remindersEnabled.toString());
+
                 if (value) {
                   await NotificationService.instance.scheduleDailyReminder(
                     hour: dailyReminderTime.hour,
@@ -400,7 +507,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-            // PRIVACY
             _buildSectionHeader('PRIVACY'),
             const SizedBox(height: 12),
             _buildNavigationSetting(
@@ -412,41 +518,35 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildToggleSetting(
               'Hide Previews',
               hidePreviewsEnabled,
-              (value) => setState(() => hidePreviewsEnabled = value),
+              (value) async {
+                setState(() => hidePreviewsEnabled = value);
+                await _saveSetting('hidePreviewsEnabled', hidePreviewsEnabled.toString());
+              },
             ),
             const SizedBox(height: 32),
 
-             // ACCOUNT
             _buildSectionHeader('ACCOUNT'),
             const SizedBox(height: 12),
 
-            _buildNavigationSetting('Profile Name', 'Arianna'),
+            _buildNavigationSetting('Profile Name', _profileName),
             const SizedBox(height: 16),
 
             _buildTappableSetting('Reset Settings', onTap: _showResetDialog),
             const SizedBox(height: 16),
 
-            // NEW LOG OUT BUTTON FIX LATER
             _buildTappableSetting(
               'Log Out',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out')),
-                );
-              },
+              onTap: _signOut,
             ),
             const SizedBox(height: 16),
 
             _buildDeleteAccountSetting(),
             const SizedBox(height: 32),
-
           ],
         ),
       ),
     );
   }
-
-  // UI BUILDERS
 
   Widget _buildSectionHeader(String title) => Text(
         title,
@@ -469,13 +569,15 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
 
-  // RESTORED THEME OPTION — wide, equal-width boxes
   Widget _buildThemeOption(String theme, IconData icon) {
     final isSelected = selectedTheme == theme;
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => selectedTheme = theme),
+        onTap: () async {
+          setState(() => selectedTheme = theme);
+          await _saveSetting('theme', selectedTheme);
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
@@ -509,7 +611,10 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildColorOption(Color color) {
     final isSelected = selectedAccentColor == color;
     return GestureDetector(
-      onTap: () => setState(() => selectedAccentColor = color),
+      onTap: () async {
+        setState(() => selectedAccentColor = color);
+        await _saveSetting('accentColor', selectedAccentColor.value.toString());
+      },
       child: Container(
         width: 40,
         height: 40,
@@ -524,7 +629,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildDropdownSetting(
-      String label, String value, List<String> options, void Function(String?) onChanged) {
+    String label,
+    String value,
+    List<String> options,
+    void Function(String?) onChanged,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -547,15 +656,19 @@ class _SettingsPageState extends State<SettingsPage> {
             dropdownColor: cardColor,
             onChanged: onChanged,
             items: options
-                .map((option) => DropdownMenuItem<String>(
-                      value: option,
-                      child: Text(option,
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: baseFontSize,
-                            fontFamily: selectedFontFamily,
-                          )),
-                    ))
+                .map(
+                  (option) => DropdownMenuItem<String>(
+                    value: option,
+                    child: Text(
+                      option,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: baseFontSize,
+                        fontFamily: selectedFontFamily,
+                      ),
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -563,7 +676,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildToggleSetting(String label, bool value, void Function(bool) onChanged) {
+  Widget _buildToggleSetting(
+    String label,
+    bool value,
+    void Function(bool) onChanged,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -616,8 +733,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
               const SizedBox(width: 4),
-              Icon(Icons.chevron_right,
-                  color: secondaryTextColor.withOpacity(0.5), size: 20),
+              Icon(
+                Icons.chevron_right,
+                color: secondaryTextColor.withOpacity(0.5),
+                size: 20,
+              ),
             ],
           ),
         ],
@@ -632,14 +752,15 @@ class _SettingsPageState extends State<SettingsPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildSettingLabel(label),
-          Icon(Icons.chevron_right,
-              color: secondaryTextColor.withOpacity(0.5), size: 20),
+          Icon(
+            Icons.chevron_right,
+            color: secondaryTextColor.withOpacity(0.5),
+            size: 20,
+          ),
         ],
       ),
     );
   }
-  
-  
 
   Widget _buildDeleteAccountSetting() {
     return GestureDetector(
@@ -656,11 +777,13 @@ class _SettingsPageState extends State<SettingsPage> {
               fontFamily: selectedFontFamily,
             ),
           ),
-          Icon(Icons.chevron_right, color: secondaryTextColor.withOpacity(0.5), size: 20),
+          Icon(
+            Icons.chevron_right,
+            color: secondaryTextColor.withOpacity(0.5),
+            size: 20,
+          ),
         ],
       ),
     );
   }
-
 }
-
