@@ -1,17 +1,18 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:tinylines/models/journal_entry.dart';
 import 'package:tinylines/services/storage_service.dart';
 
-/// Fake path provider that returns a temporary directory for tests.
 class FakePathProviderPlatform extends Fake
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {
-  final String tempPath;
   FakePathProviderPlatform(this.tempPath);
+
+  final String tempPath;
 
   @override
   Future<String?> getApplicationDocumentsPath() async => tempPath;
@@ -53,8 +54,7 @@ void main() {
       test('saveEntry creates both .md and .json files', () async {
         await service.saveEntry(testEntry);
 
-        final entriesDir =
-            Directory('${tempDir.path}/journal_entries');
+        final entriesDir = Directory('${tempDir.path}/journal_entries');
         final mdFile = File('${entriesDir.path}/2025-06-15.md');
         final jsonFile = File('${entriesDir.path}/2025-06-15.json');
 
@@ -65,8 +65,7 @@ void main() {
       test('saveEntry writes content to .md file', () async {
         await service.saveEntry(testEntry);
 
-        final entriesDir =
-            Directory('${tempDir.path}/journal_entries');
+        final entriesDir = Directory('${tempDir.path}/journal_entries');
         final mdFile = File('${entriesDir.path}/2025-06-15.md');
         final content = await mdFile.readAsString();
 
@@ -76,8 +75,7 @@ void main() {
       test('saveEntry writes valid JSON metadata to .json file', () async {
         await service.saveEntry(testEntry);
 
-        final entriesDir =
-            Directory('${tempDir.path}/journal_entries');
+        final entriesDir = Directory('${tempDir.path}/journal_entries');
         final jsonFile = File('${entriesDir.path}/2025-06-15.json');
         final raw = await jsonFile.readAsString();
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
@@ -178,8 +176,7 @@ void main() {
         await service.saveEntry(testEntry);
         await service.deleteEntry('2025-06-15');
 
-        final entriesDir =
-            Directory('${tempDir.path}/journal_entries');
+        final entriesDir = Directory('${tempDir.path}/journal_entries');
         final mdFile = File('${entriesDir.path}/2025-06-15.md');
         final jsonFile = File('${entriesDir.path}/2025-06-15.json');
 
@@ -196,7 +193,7 @@ void main() {
       });
 
       test('deleteEntry on non-existent id does not throw', () async {
-        expect(() => service.deleteEntry('9999-12-31'), returnsNormally);
+        await service.deleteEntry('9999-12-31');
       });
     });
 
@@ -208,8 +205,7 @@ void main() {
       });
 
       test('returns false when no entry exists for date', () async {
-        final result =
-            await service.hasEntryForDate(DateTime(1999, 1, 1));
+        final result = await service.hasEntryForDate(DateTime(1999, 1, 1));
         expect(result, isFalse);
       });
 
@@ -255,12 +251,10 @@ void main() {
 
     group('saveImage and deleteImage', () {
       test('saveImage copies file to entries directory', () async {
-        // Create a fake source image file
         final sourceFile = File('${tempDir.path}/source_image.jpg');
         await sourceFile.writeAsString('fake image data');
 
-        final savedPath =
-            await service.saveImage(sourceFile, '2025-06-15');
+        final savedPath = await service.saveImage(sourceFile, '2025-06-15');
 
         expect(await File(savedPath).exists(), isTrue);
       });
@@ -270,8 +264,7 @@ void main() {
         final sourceFile = File('${tempDir.path}/source_image.png');
         await sourceFile.writeAsString('fake png data');
 
-        final savedPath =
-            await service.saveImage(sourceFile, '2025-06-15');
+        final savedPath = await service.saveImage(sourceFile, '2025-06-15');
 
         expect(savedPath, contains('journal_entries'));
         expect(savedPath, contains('2025-06-15'));
@@ -281,8 +274,7 @@ void main() {
         final sourceFile = File('${tempDir.path}/to_delete.jpg');
         await sourceFile.writeAsString('delete me');
 
-        final savedPath =
-            await service.saveImage(sourceFile, '2025-06-15');
+        final savedPath = await service.saveImage(sourceFile, '2025-06-15');
         expect(await File(savedPath).exists(), isTrue);
 
         await service.deleteImage(savedPath);
@@ -290,10 +282,7 @@ void main() {
       });
 
       test('deleteImage on non-existent path does not throw', () async {
-        expect(
-          () => service.deleteImage('/nonexistent/path/image.jpg'),
-          returnsNormally,
-        );
+        await service.deleteImage('/nonexistent/path/image.jpg');
       });
     });
   });

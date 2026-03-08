@@ -6,6 +6,8 @@ import 'tutorial_page.dart';
 import 'passcode_page.dart';
 import '../services/notification_service.dart';
 import 'package:tinylines/utils/tutorial_helper.dart';
+import 'screens/auth_screen.dart';
+import 'main.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -135,7 +137,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (!mounted) return;
 
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => const AuthGate(),
+        ),
+        (route) => false,
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -451,9 +458,14 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSectionHeader('APP TUTORIAL'),
             const SizedBox(height: 12),
             _buildTappableSetting(
-              'Show Tutorial',
+            'Show Tutorial',
               onTap: () async {
-                await TutorialHelper.setTutorialSeen(false);
+                final user = FirebaseAuth.instance.currentUser;
+
+                if (user != null) {
+                  await TutorialHelper.setTutorialSeen(user.uid, false);
+                }
+
                 if (!mounted) return;
                 Navigator.pushReplacement(
                   context,

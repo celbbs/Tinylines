@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '/utils/app_theme.dart';
 import 'package:tinylines/utils/tutorial_helper.dart';
 import '/screens/home_screen.dart';
@@ -31,6 +32,23 @@ class _TutorialPageState extends State<TutorialPage> {
       'image': 'assets/tutorial3.png',
     },
   ];
+
+  Future<void> _finishTutorial() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      await TutorialHelper.setTutorialSeen(user.uid);
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,16 +89,7 @@ class _TutorialPageState extends State<TutorialPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    await TutorialHelper.setTutorialSeen();
-                    if (!mounted) return;
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const HomeScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _finishTutorial,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,

@@ -15,7 +15,6 @@ void main() {
         expect(entry.date.year, equals(today.year));
         expect(entry.date.month, equals(today.month));
         expect(entry.date.day, equals(today.day));
-        // Time component should be stripped
         expect(entry.date.hour, equals(0));
         expect(entry.date.minute, equals(0));
         expect(entry.date.second, equals(0));

@@ -70,8 +70,8 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
-  Future<bool> _shouldShowTutorial() async {
-    final seenTutorial = await TutorialHelper.hasSeenTutorial();
+  Future<bool> _shouldShowTutorial(User user) async {
+    final seenTutorial = await TutorialHelper.hasSeenTutorial(user.uid);
     return !seenTutorial;
   }
 
@@ -125,7 +125,7 @@ class _AuthGateState extends State<AuthGate> {
             }
 
             return FutureBuilder<bool>(
-              future: _shouldShowTutorial(),
+              future: _shouldShowTutorial(user),
               builder: (context, tutorialSnapshot) {
                 if (tutorialSnapshot.connectionState == ConnectionState.waiting) {
                   return const Scaffold(
