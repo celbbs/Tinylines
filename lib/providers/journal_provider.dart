@@ -2,12 +2,17 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/journal_entry.dart';
 import '../services/firestore_service.dart';
+import '../services/storage_service.dart';
 
 /// Provider for managing journal entries state
 class JournalProvider with ChangeNotifier {
   final FirestoreService? _firestoreServiceOverride;
+  final StorageService? _storageServiceOverride;
+
   FirestoreService get _firestoreService =>
       _firestoreServiceOverride ?? FirestoreService();
+  StorageService get _storageService =>
+      _storageServiceOverride ?? StorageService();
 
   List<JournalEntry> _entries = [];
   bool _isLoading = false;
@@ -20,8 +25,11 @@ class JournalProvider with ChangeNotifier {
   /// Gets all dates that have entries (for calendar highlighting)
   Set<DateTime> get entryDates => _entries.map((e) => e.date).toSet();
 
-  JournalProvider({FirestoreService? firestoreService})
-      : _firestoreServiceOverride = firestoreService {
+  JournalProvider({
+    FirestoreService? firestoreService,
+    StorageService? storageService,
+  })  : _firestoreServiceOverride = firestoreService,
+        _storageServiceOverride = storageService {
     loadEntries();
   }
 
@@ -33,7 +41,7 @@ class JournalProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Loads all journal entries from Firestore
+  /// Loads all journal entries from Firestore (source of truth)
   Future<void> loadEntries() async {
     _isLoading = true;
     _error = null;
@@ -76,13 +84,29 @@ class JournalProvider with ChangeNotifier {
     return getEntryForDate(date) != null;
   }
 
-  /// Adds or updates a journal entry
-  /// imageFile is kept here so the current UI does not break.
+  /// Adds or updates a journal entry.
+  /// If [imageFile] is provided, saves it to local storage first and embeds
+  /// the resulting path into the entry before writing to both stores.
   Future<void> saveEntry(JournalEntry entry, {File? imageFile}) async {
     try {
-      final entryToSave = entry;
+      var entryToSave = entry;
 
+      // Save image to local disk first; embed the returned path into the entry
+      if (imageFile != null) {
+        final imagePath =
+            await _storageService.saveImage(imageFile, entry.id);
+        entryToSave = entry.copyWith(imagePath: imagePath);
+      }
+
+      // Write to Firestore (source of truth)
       await _firestoreService.saveEntry(entryToSave);
+
+      // Write to local storage (best-effort cache)
+      try {
+        await _storageService.saveEntry(entryToSave);
+      } catch (e) {
+        debugPrint('Local storage save failed (non-fatal): $e');
+      }
 
       final index = _entries.indexWhere((e) => e.id == entryToSave.id);
       if (index >= 0) {
@@ -136,13 +160,37 @@ class JournalProvider with ChangeNotifier {
       clearImagePath: removeImage,
     );
 
+    // Delete the old image file from local storage when removing an image
+    if (removeImage && existingEntry.imagePath != null) {
+      try {
+        await _storageService.deleteImage(existingEntry.imagePath!);
+      } catch (e) {
+        debugPrint('Local image delete failed (non-fatal): $e');
+      }
+    }
+
     await saveEntry(updatedEntry, imageFile: newImageFile);
   }
 
-  /// Deletes an entry
+  /// Deletes an entry from both Firestore and local storage
   Future<void> deleteEntry(String id) async {
     try {
+      final entry = getEntryById(id);
+
       await _firestoreService.deleteEntry(id);
+
+      // Clean up local storage (best-effort)
+      try {
+        // Delete the image file explicitly first so StorageService.deleteEntry
+        // doesn't try to re-load the metadata to find it
+        if (entry?.imagePath != null) {
+          await _storageService.deleteImage(entry!.imagePath!);
+        }
+        await _storageService.deleteEntry(id);
+      } catch (e) {
+        debugPrint('Local storage delete failed (non-fatal): $e');
+      }
+
       _entries.removeWhere((e) => e.id == id);
       notifyListeners();
     } catch (e) {
