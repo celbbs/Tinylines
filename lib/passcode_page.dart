@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const _pinStorageKey = 'app_passcode';
-
 class PasscodePage extends StatefulWidget {
   /// if true, the user is changing an existing PIN and shows a "current PIN" step first
   final bool isChanging;
+
+  /// secure storage key to use for this user's PIN
+  /// must be passed in from settings page so both sides use same UID scoped key
+  final String pinStorageKey;
 
   /// Theme colors passed in from settings so everything matches
   final Color backgroundColor;
@@ -19,6 +21,7 @@ class PasscodePage extends StatefulWidget {
   const PasscodePage({
     super.key,
     required this.isChanging,
+    required this.pinStorageKey,
     required this.backgroundColor,
     required this.textColor,
     required this.secondaryTextColor,
@@ -83,7 +86,7 @@ class _PasscodePageState extends State<PasscodePage> {
   Future<void> _processFullPin() async {
     switch (_step) {
       case _Step.verifyCurrent:
-        final stored = await _storage.read(key: _pinStorageKey);
+        final stored = await _storage.read(key: widget.pinStorageKey);
         if (_currentInput == stored) {
           setState(() {
             _step = _Step.enterNew;
@@ -108,7 +111,7 @@ class _PasscodePageState extends State<PasscodePage> {
       case _Step.confirm:
         if (_currentInput == _firstEntry) {
           try {
-            await _storage.write(key: _pinStorageKey, value: _currentInput);
+            await _storage.write(key: widget.pinStorageKey, value: _currentInput);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

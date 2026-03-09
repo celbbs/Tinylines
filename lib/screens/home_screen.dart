@@ -7,6 +7,7 @@ import '../utils/app_theme.dart';
 import 'entry_editor_screen.dart';
 import 'on_this_day_screen.dart';
 import '../settings_page.dart';
+import '../providers/settings_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -58,8 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Consumer<JournalProvider>(
-        builder: (context, provider, child) {
+      body: Consumer2<JournalProvider, SettingsProvider>(
+        builder: (context, provider, settings, child) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -69,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildCalendar(provider),
                 const SizedBox(height: AppTheme.spacingL),
-                _buildRecentEntries(provider),
+                _buildRecentEntries(provider, settings.hidePreviewsEnabled),
               ],
             ),
           );
@@ -178,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildRecentEntries(JournalProvider provider) {
+  Widget _buildRecentEntries(JournalProvider provider, bool hidePreview) {
     final recentEntries = provider.getRecentEntries(limit: 5);
 
     if (recentEntries.isEmpty) {
@@ -219,13 +220,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: AppTheme.spacingS),
-        ...recentEntries.map((entry) => _buildEntryCard(entry)),
+        ...recentEntries.map((entry) => _buildEntryCard(entry, hidePreview)),
         const SizedBox(height: AppTheme.spacingXxl),
       ],
     );
   }
 
-  Widget _buildEntryCard(JournalEntry entry) {
+  Widget _buildEntryCard(JournalEntry entry, bool hidePreview) {
     return Card(
       child: InkWell(
         onTap: () => _viewEntry(entry),
@@ -254,12 +255,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: AppTheme.spacingS),
-              Text(
-                entry.content,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              if (hidePreview)
+                Text(
+                  'Preview hidden',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textHint,
+                        fontStyle: FontStyle.italic,
+                      ),
+                )
+              else
+                Text(
+                  entry.content,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
             ],
           ),
         ),
