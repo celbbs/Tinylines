@@ -4,12 +4,10 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
-import 'dart:io' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i6;
-import 'package:tinylines/models/journal_entry.dart' as _i4;
-import 'package:tinylines/services/storage_service.dart' as _i2;
+import 'package:tinylines/models/journal_entry.dart' as _i2;
+import 'package:tinylines/services/firestore_service.dart' as _i4;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -26,16 +24,26 @@ import 'package:tinylines/services/storage_service.dart' as _i2;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-/// A class which mocks [StorageService].
+/// A class which mocks [FirestoreService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockStorageService extends _i1.Mock implements _i2.StorageService {
-  MockStorageService() {
+class MockFirestoreService extends _i1.Mock implements _i4.FirestoreService {
+  MockFirestoreService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<void> saveEntry(_i4.JournalEntry? entry) =>
+  _i3.Future<List<_i2.JournalEntry>> loadAllEntries() =>
+      (super.noSuchMethod(
+            Invocation.method(#loadAllEntries, []),
+            returnValue: _i3.Future<List<_i2.JournalEntry>>.value(
+              <_i2.JournalEntry>[],
+            ),
+          )
+          as _i3.Future<List<_i2.JournalEntry>>);
+
+  @override
+  _i3.Future<void> saveEntry(_i2.JournalEntry? entry) =>
       (super.noSuchMethod(
             Invocation.method(#saveEntry, [entry]),
             returnValue: _i3.Future<void>.value(),
@@ -44,65 +52,9 @@ class MockStorageService extends _i1.Mock implements _i2.StorageService {
           as _i3.Future<void>);
 
   @override
-  _i3.Future<_i4.JournalEntry?> loadEntry(String? id) =>
-      (super.noSuchMethod(
-            Invocation.method(#loadEntry, [id]),
-            returnValue: _i3.Future<_i4.JournalEntry?>.value(),
-          )
-          as _i3.Future<_i4.JournalEntry?>);
-
-  @override
-  _i3.Future<List<_i4.JournalEntry>> loadAllEntries() =>
-      (super.noSuchMethod(
-            Invocation.method(#loadAllEntries, []),
-            returnValue: _i3.Future<List<_i4.JournalEntry>>.value(
-              <_i4.JournalEntry>[],
-            ),
-          )
-          as _i3.Future<List<_i4.JournalEntry>>);
-
-  @override
   _i3.Future<void> deleteEntry(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#deleteEntry, [id]),
-            returnValue: _i3.Future<void>.value(),
-            returnValueForMissingStub: _i3.Future<void>.value(),
-          )
-          as _i3.Future<void>);
-
-  @override
-  _i3.Future<Set<DateTime>> getEntryDates() =>
-      (super.noSuchMethod(
-            Invocation.method(#getEntryDates, []),
-            returnValue: _i3.Future<Set<DateTime>>.value(<DateTime>{}),
-          )
-          as _i3.Future<Set<DateTime>>);
-
-  @override
-  _i3.Future<bool> hasEntryForDate(DateTime? date) =>
-      (super.noSuchMethod(
-            Invocation.method(#hasEntryForDate, [date]),
-            returnValue: _i3.Future<bool>.value(false),
-          )
-          as _i3.Future<bool>);
-
-  @override
-  _i3.Future<String> saveImage(_i5.File? imageFile, String? entryId) =>
-      (super.noSuchMethod(
-            Invocation.method(#saveImage, [imageFile, entryId]),
-            returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
-                this,
-                Invocation.method(#saveImage, [imageFile, entryId]),
-              ),
-            ),
-          )
-          as _i3.Future<String>);
-
-  @override
-  _i3.Future<void> deleteImage(String? imagePath) =>
-      (super.noSuchMethod(
-            Invocation.method(#deleteImage, [imagePath]),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )

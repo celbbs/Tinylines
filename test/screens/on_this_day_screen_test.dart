@@ -1,48 +1,41 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:tinylines/models/journal_entry.dart';
 import 'package:tinylines/providers/journal_provider.dart';
 import 'package:tinylines/screens/on_this_day_screen.dart';
-import 'package:tinylines/services/storage_service.dart';
+import 'package:tinylines/services/firestore_service.dart';
+import 'package:mockito/mockito.dart';
 
-// Mock storage service for tests
-class MockStorageService extends StorageService {
-  final Map<String, JournalEntry> _store = {};
+/// Minimal FirestoreService mock that never touches Firebase.
+class _MockFirestoreService extends Mock implements FirestoreService {
+  final List<JournalEntry> _entries = [];
 
   @override
-  Future<List<JournalEntry>> loadAllEntries() async {
-    return _store.values.toList();
-  }
+  Future<List<JournalEntry>> loadAllEntries() async => List.of(_entries);
 
   @override
   Future<void> saveEntry(JournalEntry entry) async {
-    _store[entry.id] = entry;
+    _entries.removeWhere((e) => e.id == entry.id);
+    _entries.add(entry);
   }
 
   @override
   Future<void> deleteEntry(String id) async {
-    _store.remove(id);
+    _entries.removeWhere((e) => e.id == id);
   }
-
-  @override
-  Future<String> saveImage(File file, String id) async {
-    return 'mock_path/$id.png';
-  }
-
-  @override
-  Future<void> deleteImage(String path) async {}
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('OnThisDayScreen', () {
+    late _MockFirestoreService mockFirestore;
     late JournalProvider provider;
 
     setUp(() {
-      provider = JournalProvider(storageService: MockStorageService());
+      mockFirestore = _MockFirestoreService();
+      provider = JournalProvider(firestoreService: mockFirestore);
     });
 
     testWidgets('displays entries that match today', (tester) async {
@@ -80,21 +73,21 @@ void main() {
       expect(find.text('No entries for this day'), findsOneWidget);
     });
 
-testWidgets('second entry for same day replaces first', (tester) async {
-  final today = DateTime.now();
-  final entry1 = JournalEntry.forDate(date: today, content: 'Memory 1');
-  final entry2 = JournalEntry.forDate(date: today, content: 'Memory 2');
-  await provider.saveEntry(entry1);
-  await provider.saveEntry(entry2);
-  await tester.pumpWidget(
-    ChangeNotifierProvider.value(
-      value: provider,
-      child: const MaterialApp(home: OnThisDayScreen()),
-    ),
-  );
-  await tester.pumpAndSettle();
-  expect(find.text('Memory 2'), findsOneWidget);
-  expect(find.text('Memory 1'), findsNothing);
-});
+    testWidgets('second entry for same day replaces first', (tester) async {
+      final today = DateTime.now();
+      final entry1 = JournalEntry.forDate(date: today, content: 'Memory 1');
+      final entry2 = JournalEntry.forDate(date: today, content: 'Memory 2');
+      await provider.saveEntry(entry1);
+      await provider.saveEntry(entry2);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: provider,
+          child: const MaterialApp(home: OnThisDayScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Memory 2'), findsOneWidget);
+      expect(find.text('Memory 1'), findsNothing);
+    });
   });
 }

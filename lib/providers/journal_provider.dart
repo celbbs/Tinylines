@@ -5,7 +5,10 @@ import '../services/firestore_service.dart';
 
 /// Provider for managing journal entries state
 class JournalProvider with ChangeNotifier {
-  final FirestoreService _firestoreService;
+  final FirestoreService? _firestoreServiceOverride;
+  FirestoreService get _firestoreService =>
+      _firestoreServiceOverride ?? FirestoreService();
+
   List<JournalEntry> _entries = [];
   bool _isLoading = false;
   String? _error;
@@ -18,7 +21,9 @@ class JournalProvider with ChangeNotifier {
   Set<DateTime> get entryDates => _entries.map((e) => e.date).toSet();
 
   JournalProvider({FirestoreService? firestoreService})
-      : _firestoreService = firestoreService ?? FirestoreService();
+      : _firestoreServiceOverride = firestoreService {
+    loadEntries();
+  }
 
   /// Resets provider state when auth status changes
   void resetForAuthChange() {
