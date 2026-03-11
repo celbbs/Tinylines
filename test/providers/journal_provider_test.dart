@@ -42,19 +42,12 @@ void main() {
   });
 
   group('JournalProvider initialization', () {
-    test('calls loadAllEntries on construction', () async {
-      makeProvider();
-      await Future.delayed(Duration.zero);
-
-      verify(mockFirestore.loadAllEntries()).called(1);
-    });
-
     test('entries list is populated after load', () async {
       final entry = makeEntry('2025-06-15', DateTime(2025, 6, 15), 'Hello');
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(provider.entries, hasLength(1));
       expect(provider.entries.first.id, equals('2025-06-15'));
@@ -62,7 +55,7 @@ void main() {
 
     test('isLoading is false after load completes', () async {
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(provider.isLoading, isFalse);
     });
@@ -71,7 +64,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenThrow(Exception('disk error'));
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(provider.error, isNotNull);
       expect(provider.error, contains('Failed to load entries'));
@@ -85,7 +78,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final result = provider.getEntryForDate(DateTime(2025, 6, 15));
       expect(result, isNotNull);
@@ -94,7 +87,7 @@ void main() {
 
     test('returns null when no entry exists for that date', () async {
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final result = provider.getEntryForDate(DateTime(2025, 6, 15));
       expect(result, isNull);
@@ -105,7 +98,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final result = provider.getEntryForDate(DateTime(2025, 6, 15, 23, 59, 59));
       expect(result, isNotNull);
@@ -118,14 +111,14 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(provider.hasEntryForDate(DateTime(2025, 6, 15)), isTrue);
     });
 
     test('returns false when entry does not exist', () async {
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(provider.hasEntryForDate(DateTime(2025, 6, 15)), isFalse);
     });
@@ -140,7 +133,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => entries);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(provider.entryDates,
           containsAll([DateTime(2025, 6, 15), DateTime(2025, 7, 4)]));
@@ -153,7 +146,7 @@ void main() {
       when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final entry = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'New entry');
       await provider.saveEntry(entry);
@@ -166,7 +159,7 @@ void main() {
       when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final entry = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'New entry');
       await provider.saveEntry(entry);
@@ -180,7 +173,7 @@ void main() {
       when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final updated = original.copyWith(content: 'Updated');
       await provider.saveEntry(updated);
@@ -196,7 +189,7 @@ void main() {
           .thenAnswer((_) async => '/local/path/2025-09-01.jpg');
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final entry = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'With image');
       final fakeFile = File('/fake/image.jpg');
@@ -225,7 +218,7 @@ void main() {
       when(mockFirestore.deleteEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       await provider.deleteEntry('2025-09-01');
 
@@ -240,7 +233,7 @@ void main() {
       when(mockFirestore.deleteEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       await provider.deleteEntry('2025-09-01');
 
@@ -255,7 +248,7 @@ void main() {
       when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       await provider.updateEntry('2025-09-01', 'New content');
 
@@ -275,7 +268,7 @@ void main() {
       when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       await provider.updateEntry('2025-09-01', 'Removed image',
           removeImage: true);
@@ -296,7 +289,7 @@ void main() {
       when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       await provider.updateEntry('2025-09-01', 'Removed image',
           removeImage: true);
@@ -306,7 +299,7 @@ void main() {
 
     test('throws when entry id does not exist', () async {
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(
         () => provider.updateEntry('9999-01-01', 'Content'),
@@ -329,7 +322,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => entries);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final recent = provider.getRecentEntries(limit: 3);
       expect(recent, hasLength(3));
@@ -343,7 +336,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => entries);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final recent = provider.getRecentEntries(limit: 10);
       expect(recent, hasLength(1));
@@ -361,7 +354,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => entries);
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final june2025 = provider.getEntriesForMonth(2025, 6);
       expect(june2025, hasLength(2));
@@ -372,7 +365,7 @@ void main() {
 
     test('returns empty list when no entries in that month', () async {
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       final result = provider.getEntriesForMonth(2025, 6);
       expect(result, isEmpty);
@@ -384,7 +377,7 @@ void main() {
       when(mockFirestore.loadAllEntries()).thenThrow(Exception('disk error'));
 
       final provider = makeProvider();
-      await Future.delayed(Duration.zero);
+      await provider.loadEntries();
 
       expect(provider.error, isNotNull);
       provider.clearError();
