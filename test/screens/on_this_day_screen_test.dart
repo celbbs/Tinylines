@@ -5,6 +5,7 @@ import 'package:tinylines/models/journal_entry.dart';
 import 'package:tinylines/providers/journal_provider.dart';
 import 'package:tinylines/screens/on_this_day_screen.dart';
 import 'package:tinylines/services/firestore_service.dart';
+import 'package:tinylines/services/storage_service.dart';
 import 'package:mockito/mockito.dart';
 
 /// Minimal FirestoreService mock that never touches Firebase.
@@ -26,6 +27,21 @@ class _MockFirestoreService extends Mock implements FirestoreService {
   }
 }
 
+/// No-op StorageService mock that never touches the filesystem.
+class _MockStorageService extends Mock implements StorageService {
+  @override
+  Future<void> saveEntry(JournalEntry entry) async {}
+
+  @override
+  Future<void> deleteEntry(String id) async {}
+
+  @override
+  Future<void> deleteImage(String path) async {}
+
+  @override
+  Future<String> saveImage(dynamic file, String id) async => '';
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -35,13 +51,17 @@ void main() {
 
     setUp(() {
       mockFirestore = _MockFirestoreService();
-      provider = JournalProvider(firestoreService: mockFirestore);
+      provider = JournalProvider(
+        firestoreService: mockFirestore,
+        storageService: _MockStorageService(),
+      );
     });
 
     testWidgets('displays entries that match today', (tester) async {
       final today = DateTime.now();
       final entry = JournalEntry.forDate(date: today, content: 'Today memory');
-      await provider.saveEntry(entry);
+      mockFirestore._entries.add(entry);
+      await provider.loadEntries();
 
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
@@ -50,7 +70,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Today memory'), findsOneWidget);
     });
@@ -58,7 +78,8 @@ void main() {
     testWidgets('does not display entries that do not match today', (tester) async {
       final notToday = DateTime.now().subtract(const Duration(days: 1));
       final entry = JournalEntry.forDate(date: notToday, content: 'Yesterday memory');
-      await provider.saveEntry(entry);
+      mockFirestore._entries.add(entry);
+      await provider.loadEntries();
 
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
@@ -67,7 +88,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Yesterday memory'), findsNothing);
       expect(find.text('No entries for this day'), findsOneWidget);
@@ -77,15 +98,19 @@ void main() {
       final today = DateTime.now();
       final entry1 = JournalEntry.forDate(date: today, content: 'Memory 1');
       final entry2 = JournalEntry.forDate(date: today, content: 'Memory 2');
-      await provider.saveEntry(entry1);
-      await provider.saveEntry(entry2);
+      await mockFirestore.saveEntry(entry1);
+      await mockFirestore.saveEntry(entry2);
+      await provider.loadEntries();
+
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
           value: provider,
           child: const MaterialApp(home: OnThisDayScreen()),
         ),
       );
-      await tester.pumpAndSettle();
+
+      await tester.pump();
+
       expect(find.text('Memory 2'), findsOneWidget);
       expect(find.text('Memory 1'), findsNothing);
     });

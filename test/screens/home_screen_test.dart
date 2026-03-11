@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:tinylines/models/journal_entry.dart';
 import 'package:tinylines/providers/journal_provider.dart';
+import 'package:tinylines/providers/settings_provider.dart';
 import 'package:tinylines/screens/home_screen.dart';
 import 'package:tinylines/screens/entry_editor_screen.dart';
 import 'package:tinylines/utils/app_theme.dart';
@@ -52,8 +53,11 @@ class FakeJournalProvider extends JournalProvider {
 
 /// Wraps HomeScreen in the minimal widget tree needed for testing.
 Widget buildTestApp(JournalProvider provider) {
-  return ChangeNotifierProvider<JournalProvider>.value(
-    value: provider,
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<JournalProvider>.value(value: provider),
+      ChangeNotifierProvider<SettingsProvider>(create: (_) => SettingsProvider()),
+    ],
     child: MaterialApp(
       theme: AppTheme.lightTheme,
       home: const HomeScreen(),
