@@ -29,9 +29,7 @@ class JournalProvider with ChangeNotifier {
     FirestoreService? firestoreService,
     StorageService? storageService,
   })  : _firestoreServiceOverride = firestoreService,
-        _storageServiceOverride = storageService {
-    loadEntries();
-  }
+        _storageServiceOverride = storageService;
 
   /// Resets provider state when auth status changes
   void resetForAuthChange() {

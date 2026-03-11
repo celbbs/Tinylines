@@ -60,6 +60,7 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   String? _lastUserId;
+  Future<void>? _loadFuture;
 
   // Tracks whether the user has passed the PIN lock screen during this session
   // Resets to false when a different user signs in
@@ -71,18 +72,22 @@ class _AuthGateState extends State<AuthGate> {
     return _secureStorage.read(key: 'settings_${uid}_app_passcode');
   }
 
-  Future<void> _handleSignedInUser(BuildContext context, User user) async {
-    final journalProvider = context.read<JournalProvider>();
-    final settingsProvider = context.read<SettingsProvider>();
-
+  void _triggerSignedInLoad(BuildContext context, User user) {
     if (_lastUserId != user.uid) {
       _lastUserId = user.uid;
       _passcodeUnlocked = false; // require PIN to be entered again for a new user session
-      journalProvider.resetForAuthChange();
-      await Future.wait([
-        journalProvider.loadEntries(),
-        settingsProvider.loadForUser(user.uid),
-      ]);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final journalProvider = context.read<JournalProvider>();
+        final settingsProvider = context.read<SettingsProvider>();
+        journalProvider.resetForAuthChange();
+        setState(() {
+          _loadFuture = Future.wait([
+            journalProvider.loadEntries(),
+            settingsProvider.loadForUser(user.uid),
+          ]);
+        });
+      });
     }
   }
 
@@ -123,8 +128,10 @@ class _AuthGateState extends State<AuthGate> {
           return const AuthScreen();
         }
 
+        _triggerSignedInLoad(context, user);
+
         return FutureBuilder<void>(
-          future: _handleSignedInUser(context, user),
+          future: _loadFuture,
           builder: (context, loadSnapshot) {
             if (loadSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
