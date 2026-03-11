@@ -41,29 +41,28 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyArmRvgvfbi2Hs8d-uqhJWtXIRjvdBXHUw',
-    appId: '1:1081996176104:web:27499fee60eb23e930f75d',
-    messagingSenderId: '1081996176104',
-    projectId: 'tinylines-5265e',
-    authDomain: 'tinylines-5265e.firebaseapp.com',
-    storageBucket: 'tinylines-5265e.firebasestorage.app',
-    measurementId: 'G-1Q4BPN5CSP',
+    apiKey: 'AIzaSyBnVkGeN9SIjIX8Hm2EJZKQ53HKFLx_nvI',
+    appId: '1:692001739783:web:b0f9a5244bbd264e3386a2',
+    messagingSenderId: '692001739783',
+    projectId: 'tinylines-863ea',
+    authDomain: 'tinylines-863ea.firebaseapp.com',
+    storageBucket: 'tinylines-863ea.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCkQNdSka40xy2hA09EoO0dQe_oao5C4ko',
-    appId: '1:1081996176104:android:d3630ae6c9cd32fa30f75d',
-    messagingSenderId: '1081996176104',
-    projectId: 'tinylines-5265e',
-    storageBucket: 'tinylines-5265e.firebasestorage.app',
+    apiKey: 'AIzaSyDrg0igKS80H6iaBGJ_TDOhWxaOc04cqqs',
+    appId: '1:692001739783:android:35d7dfba2a04cccb3386a2',
+    messagingSenderId: '692001739783',
+    projectId: 'tinylines-863ea',
+    storageBucket: 'tinylines-863ea.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC0J1ZuOouxkRm2n4Vng2Q31ZqxsNnT8EI',
-    appId: '1:1081996176104:ios:efbca11b04efbd9930f75d',
-    messagingSenderId: '1081996176104',
-    projectId: 'tinylines-5265e',
-    storageBucket: 'tinylines-5265e.firebasestorage.app',
+    apiKey: 'AIzaSyDl2xVmrtg1K_az_SyEQ8GsTvw0MZpzVG0',
+    appId: '1:692001739783:ios:2cb736ade849cd8f3386a2',
+    messagingSenderId: '692001739783',
+    projectId: 'tinylines-863ea',
+    storageBucket: 'tinylines-863ea.firebasestorage.app',
     iosBundleId: 'com.example.tinyLines',
   );
 
