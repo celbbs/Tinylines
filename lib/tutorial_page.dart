@@ -16,126 +16,166 @@ class _TutorialPageState extends State<TutorialPage> {
 
   final List<Map<String, String>> _pages = [
     {
-      'title': 'Welcome',
-      'subtitle': 'TinyLines helps you journal every day.',
+      'title': 'Welcome to TinyLines',
+      'subtitle': 'Capture one meaningful moment every day.',
       'image': 'assets/tutorial1.png',
     },
     {
-      'title': 'Add Entries',
-      'subtitle': 'Create entries for any day you want.',
+      'title': 'Add an Entry',
+      'subtitle': 'Tap any day on the calendar to write about it, past or present.',
       'image': 'assets/tutorial2.png',
     },
     {
-      'title': 'Attach Photos',
-      'subtitle': 'Pick images from your camera roll.',
+      'title': 'Add a Photo',
+      'subtitle': 'Attach a photo to bring your memory to life.',
       'image': 'assets/tutorial3.png',
     },
   ];
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: PageView.builder(
-        controller: _controller,
-        itemCount: _pages.length,
-        onPageChanged: (index) => setState(() => _currentPage = index),
-        itemBuilder: (context, index) {
-          final page = _pages[index];
-          return Padding(
-            padding: EdgeInsets.all(AppTheme.spacingXl),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (page['image'] != null)
-                  Image.asset(page['image']!, height: 250),
-                SizedBox(height: AppTheme.spacingXl),
-                Text(
-                  page['title']!,
-                  style: Theme.of(context).textTheme.displayMedium,
-                ),
-                SizedBox(height: AppTheme.spacingM),
-                Text(
-                  page['subtitle']!,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-      bottomSheet: _currentPage == _pages.length - 1
-          ? Padding(
-              padding: EdgeInsets.all(AppTheme.spacingM),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await TutorialHelper.setTutorialSeen();
-                    if (!mounted) return;
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const HomeScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView.builder(
+                controller: _controller,
+                itemCount: _pages.length,
+                onPageChanged: (index) => setState(() => _currentPage = index),
+                itemBuilder: (context, index) {
+                  final page = _pages[index];
+                  return Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingXxl,
-                      vertical: AppTheme.spacingM,
+                      horizontal: AppTheme.spacingXl,
+                      vertical: AppTheme.spacingXl,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          page['title']!,
+                          style: Theme.of(context).textTheme.displayMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: AppTheme.spacingM),
+                        Text(
+                          page['subtitle']!,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: AppTheme.spacingXl),
+                        if (page['image'] != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              page['image']!,
+                              height: 280,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                      ],
                     ),
+                  );
+                },
+              ),
+            ),
+            _buildBottomBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    final isLastPage = _currentPage == _pages.length - 1;
+
+    return Container(
+      padding: EdgeInsets.all(AppTheme.spacingM),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.dividerColor,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: isLastPage
+          ? SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await TutorialHelper.setTutorialSeen();
+                  if (!mounted) return;
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomeScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    vertical: AppTheme.spacingM,
                   ),
-                  child: const Text('Get Started'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                  ),
+                ),
+                child: const Text(
+                  'Get Started',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             )
-          : Padding(
-              padding: EdgeInsets.all(AppTheme.spacingM),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => _controller.jumpToPage(_pages.length - 1),
-                    child: Text(
-                      'Skip',
-                      style: TextStyle(color: AppTheme.primaryColor),
-                    ),
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => _controller.jumpToPage(_pages.length - 1),
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(color: AppTheme.primaryColor),
                   ),
-                  Row(
-                    children: List.generate(
-                      _pages.length,
-                      (index) => Container(
-                        margin: EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentPage == index
-                              ? AppTheme.primaryColor
-                              : AppTheme.dividerColor,
-                        ),
+                ),
+                Row(
+                  children: List.generate(
+                    _pages.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentPage == index ? 16 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: _currentPage == index
+                            ? AppTheme.primaryColor
+                            : AppTheme.dividerColor,
                       ),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => _controller.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    ),
-                    child: Text(
-                      'Next',
-                      style: TextStyle(color: AppTheme.primaryColor),
-                    ),
+                ),
+                TextButton(
+                  onPressed: () => _controller.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
                   ),
-                ],
-              ),
+                  child: Text(
+                    'Next',
+                    style: TextStyle(color: AppTheme.primaryColor),
+                  ),
+                ),
+              ],
             ),
     );
   }

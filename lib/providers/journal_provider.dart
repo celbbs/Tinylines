@@ -82,6 +82,22 @@ class JournalProvider with ChangeNotifier {
     return getEntryForDate(date) != null;
   }
 
+  int get currentStreak {
+  int streak = 0;
+  DateTime day = DateTime.now();
+
+  while (true) {
+    final normalized = DateTime(day.year, day.month, day.day);
+    if (hasEntryForDate(normalized)) {
+      streak++;
+      day = day.subtract(const Duration(days: 1));
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
   /// Adds or updates a journal entry.
   /// If [imageFile] is provided, saves it to local storage first and embeds
   /// the resulting path into the entry before writing to both stores.

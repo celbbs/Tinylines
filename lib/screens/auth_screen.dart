@@ -13,6 +13,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _name = TextEditingController();
 
   bool _isSignIn = true;
   bool _loading = false;
@@ -23,6 +24,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _name.dispose();
     super.dispose();
   }
 
@@ -35,10 +37,18 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       final email = _email.text.trim();
       final password = _password.text;
+      final name = _name.text.trim();
 
       if (email.isEmpty || password.isEmpty) {
         setState(() {
           _error = 'Email and password are required.';
+        });
+        return;
+      }
+
+      if (!_isSignIn && name.isEmpty) {
+        setState(() {
+          _error = 'Please enter your name.';
         });
         return;
       }
@@ -49,10 +59,12 @@ class _AuthScreenState extends State<AuthScreen> {
           password: password,
         );
       } else {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        final credential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
+        await credential.user?.updateDisplayName(name);
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -87,6 +99,19 @@ class _AuthScreenState extends State<AuthScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppTheme.spacingL),
+
+            if (!_isSignIn) ...[
+              TextField(
+                controller: _name,
+                keyboardType: TextInputType.name,
+                autocorrect: false,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingM),
+            ],
 
             TextField(
               key: const Key('auth_email_field'),

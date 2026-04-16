@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'providers/settings_provider.dart';
 import 'tutorial_page.dart';
 import 'passcode_page.dart';
+import 'screens/auth_screen.dart';
 import '../services/notification_service.dart';
 import 'package:tinylines/utils/tutorial_helper.dart';
 
@@ -20,9 +21,10 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _storage = const FlutterSecureStorage();
 
-  // _pinIsSet is the only local state
+  // tracks whether a pin has been set
   bool _pinIsSet = false;
 
+  // available accent colors
   final List<Color> accentColors = [
     const Color(0xFF4A90E2),
     const Color(0xFF50C878),
@@ -34,6 +36,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   User? get _currentUser => FirebaseAuth.instance.currentUser;
 
+  // returns display name, email, or uid as fallback
   String get _profileName {
     final user = _currentUser;
     if (user == null) return 'Not signed in';
@@ -46,14 +49,19 @@ class _SettingsPageState extends State<SettingsPage> {
     return user.uid;
   }
 
+  // returns the user's email or a fallback string
+  String get _userEmail {
+    final user = _currentUser;
+    if (user == null) return '';
+    return user.email ?? '';
+  }
+
   String _key(String name) =>
       context.read<SettingsProvider>().storageKey(name);
 
   @override
   void initState() {
     super.initState();
-    // Settings are loaded by AuthGate via SettingsProvider.loadForUser().
-    // check whether a PIN has been stored
     _checkPinStatus();
   }
 
@@ -64,22 +72,41 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _signOut() async {
+Future<void> _signOut() async {
+  try {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true)
+        .popUntil((route) => route.isFirst);
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to log out. Please try again.')),
+    );
+  }
+}
+
+  // sends a password reset email to the user's address
+  Future<void> _sendPasswordReset() async {
+    final user = _currentUser;
+    if (user == null || user.email == null) return;
+
     try {
-      await FirebaseAuth.instance.signOut();
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: user.email!);
       if (!mounted) return;
-      // Use rootNavigator: true so this works even when SettingsPage is inside a nested navigator
-      // Popping to first route returns to AuthGate, which detects sign-out via authStateChanges and rebuilds to show AuthScreen
-      Navigator.of(context, rootNavigator: true)
-          .popUntil((route) => route.isFirst);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset email sent to ${user.email}'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to log out. Please try again.')),
+        const SnackBar(content: Text('Failed to send reset email. Please try again.')),
       );
     }
   }
-
 
   Future<void> _openPasscodePage() async {
     final s = context.read<SettingsProvider>();
@@ -191,7 +218,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
     final uid = user.uid;
 
-    // Show a loading indicator
     if (!mounted) return;
     showDialog(
       context: context,
@@ -200,31 +226,25 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     try {
-      // 1. Delete the user's Firestore document
-      //    Sub-collections (like entries) become orphaned but are unreachable
-      //    once auth account is gone. I think full recursive deletion requires a
-      //    cloud function, ask Kuena if that's needed??
+      // delete firestore document first
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .delete()
-          .onError((_, __) => null); // non-fatal if doc doesn't exist
+          .onError((_, __) => null);
 
-      // 2. Wipe all locally stored settings for this user
+      // wipe local storage
       await _storage.deleteAll();
 
-      // 3. Delete the Firebase Auth account
-      //    This will trigger AuthGate's authStateChanges stream and automatically navigate user to AuthScreen
+      // delete firebase auth account — triggers authgate to navigate to auth screen
       await user.delete();
 
-      // Pop the loading dialog box and AuthGate handles the rest
       if (mounted) Navigator.of(context).pop();
     } on FirebaseAuthException catch (e) {
-      if (mounted) Navigator.of(context).pop(); // dismiss loading
+      if (mounted) Navigator.of(context).pop();
       if (!mounted) return;
 
       if (e.code == 'requires-recent-login') {
-        // Firebase requires a fresh signin before sensitive operations
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -249,7 +269,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // watch() so this page rebuilds live when any setting changes
+    // rebuilds live when settings change
     final s = context.watch<SettingsProvider>();
 
     return Scaffold(
@@ -275,6 +295,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // appearance section
             _buildSectionHeader('APPEARANCE', s),
             const SizedBox(height: 12),
 
@@ -319,6 +340,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
+            // journaling section
             _buildSectionHeader('JOURNALING', s),
             const SizedBox(height: 12),
             _buildToggleSetting(
@@ -337,22 +359,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
-            _buildSectionHeader('APP TUTORIAL', s),
-            const SizedBox(height: 12),
-            _buildTappableSetting(
-              'Show Tutorial',
-              s,
-              onTap: () async {
-                await TutorialHelper.setTutorialSeen(false);
-                if (!mounted) return;
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TutorialPage()),
-                );
-              },
-            ),
-            const SizedBox(height: 32),
-
+            // notifications section
             _buildSectionHeader('NOTIFICATIONS', s),
             const SizedBox(height: 12),
             _buildTimeSetting(
@@ -394,6 +401,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
+            // privacy section
             _buildSectionHeader('PRIVACY', s),
             const SizedBox(height: 12),
             _buildNavigationSetting(
@@ -411,10 +419,41 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 32),
 
+            // app tutorial section
+            _buildSectionHeader('APP TUTORIAL', s),
+            const SizedBox(height: 12),
+            _buildTappableSetting(
+              'Show Tutorial',
+              s,
+              onTap: () async {
+                await TutorialHelper.setTutorialSeen(false);
+                if (!mounted) return;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TutorialPage()),
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+
+            // account section
             _buildSectionHeader('ACCOUNT', s),
             const SizedBox(height: 12),
 
+            // shows display name
             _buildNavigationSetting('Profile Name', _profileName, s),
+            const SizedBox(height: 16),
+
+            // shows email as read-only
+            _buildNavigationSetting('Email', _userEmail, s),
+            const SizedBox(height: 16),
+
+            // sends a password reset email
+            _buildTappableSetting(
+              'Change Password',
+              s,
+              onTap: _sendPasswordReset,
+            ),
             const SizedBox(height: 16),
 
             _buildTappableSetting('Reset Settings', s, onTap: _showResetDialog),
