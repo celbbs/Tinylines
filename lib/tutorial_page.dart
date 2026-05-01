@@ -3,6 +3,7 @@ import '/utils/app_theme.dart';
 import 'package:tinylines/utils/tutorial_helper.dart';
 import '/screens/home_screen.dart';
 
+// full screen tutorial shown to new users on first launch
 class TutorialPage extends StatefulWidget {
   const TutorialPage({super.key});
 
@@ -11,9 +12,13 @@ class TutorialPage extends StatefulWidget {
 }
 
 class _TutorialPageState extends State<TutorialPage> {
+  // controls swiping between pages
   final PageController _controller = PageController();
+
+  // tracks which page the user is on
   int _currentPage = 0;
 
+  // content for each tutorial slide
   final List<Map<String, String>> _pages = [
     {
       'title': 'Welcome to TinyLines',
@@ -32,6 +37,7 @@ class _TutorialPageState extends State<TutorialPage> {
     },
   ];
 
+  // get avoid memory leaks
   @override
   void dispose() {
     _controller.dispose();
@@ -49,6 +55,7 @@ class _TutorialPageState extends State<TutorialPage> {
               child: PageView.builder(
                 controller: _controller,
                 itemCount: _pages.length,
+                // update current page index on swipe
                 onPageChanged: (index) => setState(() => _currentPage = index),
                 itemBuilder: (context, index) {
                   final page = _pages[index];
@@ -60,18 +67,21 @@ class _TutorialPageState extends State<TutorialPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // slide title
                         Text(
                           page['title']!,
                           style: Theme.of(context).textTheme.displayMedium,
                           textAlign: TextAlign.center,
                         ),
                         SizedBox(height: AppTheme.spacingM),
+                        // slide subtitle
                         Text(
                           page['subtitle']!,
                           style: Theme.of(context).textTheme.bodyLarge,
                           textAlign: TextAlign.center,
                         ),
                         SizedBox(height: AppTheme.spacingXl),
+                        // show image if one exists for this slide
                         if (page['image'] != null)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
@@ -87,6 +97,7 @@ class _TutorialPageState extends State<TutorialPage> {
                 },
               ),
             ),
+            // bottom bar with navigation controls
             _buildBottomBar(),
           ],
         ),
@@ -94,6 +105,8 @@ class _TutorialPageState extends State<TutorialPage> {
     );
   }
 
+  // builds the bottom nav bar
+  // shows "get started" on the last page, skip/next otherwise
   Widget _buildBottomBar() {
     final isLastPage = _currentPage == _pages.length - 1;
 
@@ -113,8 +126,10 @@ class _TutorialPageState extends State<TutorialPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
+                  // mark tutorial as done so it doesn't show again
                   await TutorialHelper.setTutorialSeen();
                   if (!mounted) return;
+                  // go to home screen
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -141,6 +156,7 @@ class _TutorialPageState extends State<TutorialPage> {
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // skip jumps to the last page
                 TextButton(
                   onPressed: () => _controller.jumpToPage(_pages.length - 1),
                   child: Text(
@@ -148,12 +164,14 @@ class _TutorialPageState extends State<TutorialPage> {
                     style: TextStyle(color: AppTheme.primaryColor),
                   ),
                 ),
+                // dot indicators showing current page position
                 Row(
                   children: List.generate(
                     _pages.length,
                     (index) => AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
+                      // active dot is wider
                       width: _currentPage == index ? 16 : 8,
                       height: 8,
                       decoration: BoxDecoration(
@@ -165,6 +183,7 @@ class _TutorialPageState extends State<TutorialPage> {
                     ),
                   ),
                 ),
+                // next animates to the following page
                 TextButton(
                   onPressed: () => _controller.nextPage(
                     duration: const Duration(milliseconds: 300),

@@ -76,8 +76,10 @@ Future<void> _signOut() async {
   try {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-    Navigator.of(context, rootNavigator: true)
-        .popUntil((route) => route.isFirst);
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+      (route) => false,
+    );
   } catch (e) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
