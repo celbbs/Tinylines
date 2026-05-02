@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import '../models/journal_entry.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
+
+enum SyncStatus { synced, syncing, offline, error }
 
 /// Provider for managing journal entries state
 class JournalProvider with ChangeNotifier {
@@ -17,10 +21,20 @@ class JournalProvider with ChangeNotifier {
   List<JournalEntry> _entries = [];
   bool _isLoading = false;
   String? _error;
+  bool _isOffline = false;
+  bool _connectivityInitialized = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   List<JournalEntry> get entries => _entries;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  SyncStatus get syncStatus {
+    if (_error != null) return SyncStatus.error;
+    if (_isLoading) return SyncStatus.syncing;
+    if (_isOffline) return SyncStatus.offline;
+    return SyncStatus.synced;
+  }
 
   /// Gets all dates that have entries (for calendar highlighting)
   Set<DateTime> get entryDates => _entries.map((e) => e.date).toSet();
@@ -30,6 +44,52 @@ class JournalProvider with ChangeNotifier {
     StorageService? storageService,
   })  : _firestoreServiceOverride = firestoreService,
         _storageServiceOverride = storageService;
+
+  /// Initializes connectivity tracking lazily on first widget subscription,
+  /// avoiding platform-channel errors in pure unit-test environments.
+  @override
+  void addListener(VoidCallback listener) {
+    super.addListener(listener);
+    if (!_connectivityInitialized) {
+      _connectivityInitialized = true;
+      _initConnectivity();
+    }
+  }
+
+  void _initConnectivity() {
+    try {
+      _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+        (results) {
+          final offline = results.isEmpty ||
+              results.every((r) => r == ConnectivityResult.none);
+          if (_isOffline != offline) {
+            _isOffline = offline;
+            notifyListeners();
+          }
+        },
+        onError: (_) {},
+      );
+      Connectivity().checkConnectivity().then(
+        (results) {
+          final offline = results.isEmpty ||
+              results.every((r) => r == ConnectivityResult.none);
+          if (_isOffline != offline) {
+            _isOffline = offline;
+            notifyListeners();
+          }
+        },
+        onError: (_) {},
+      );
+    } catch (_) {
+      // Platform channels unavailable in this environment
+    }
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
 
   /// Resets provider state when auth status changes
   void resetForAuthChange() {

@@ -14,7 +14,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String defaultFontSize = 'Medium';
   static const String defaultFontStyle = 'Sans Serif';
   static const bool defaultDailyPrompt = true;
-  static const String defaultAutoSave = '30 seconds';
+  static const String defaultAutoSave = '5 seconds';
   static const TimeOfDay defaultReminderTime = TimeOfDay(hour: 19, minute: 0);
   static const bool defaultRemindersEnabled = true;
   static const bool defaultHidePreviews = false;
@@ -87,7 +87,9 @@ class SettingsProvider extends ChangeNotifier {
     selectedFontSize    = fontSize  ?? defaultFontSize;
     selectedFontStyle   = fontStyle ?? defaultFontStyle;
     dailyPromptEnabled  = dailyPrompt   == null ? defaultDailyPrompt       : dailyPrompt   == 'true';
-    autoSaveInterval    = autoSave      ?? defaultAutoSave;
+    const validAutoSave = ['1 second', '5 seconds', '10 seconds'];
+    final rawAutoSave   = autoSave ?? defaultAutoSave;
+    autoSaveInterval    = validAutoSave.contains(rawAutoSave) ? rawAutoSave : defaultAutoSave;
     remindersEnabled    = remindersVal  == null ? defaultRemindersEnabled   : remindersVal  == 'true';
     hidePreviewsEnabled = hidePreviewsVal == null ? defaultHidePreviews     : hidePreviewsVal == 'true';
 

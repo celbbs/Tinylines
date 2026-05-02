@@ -331,7 +331,7 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildDropdownSetting(
               'Auto-Save',
               s.autoSaveInterval,
-              ['10 seconds', '30 seconds', '60 seconds'],
+              ['1 second', '5 seconds', '10 seconds'],
               s,
               (value) => s.setAutoSave(value!),
             ),
@@ -566,7 +566,7 @@ class _SettingsPageState extends State<SettingsPage> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: s.selectedAccentColor,
+          activeThumbColor: s.selectedAccentColor,
         ),
       ],
     );
