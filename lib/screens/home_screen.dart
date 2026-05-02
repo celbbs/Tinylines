@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
 import '../providers/journal_provider.dart';
 import '../models/journal_entry.dart';
 import '../utils/app_theme.dart';
@@ -45,6 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         actions: [
+          Consumer<JournalProvider>(
+            builder: (_, p, __) => _SyncStatusChip(
+              status: p.syncStatus,
+              onRetry: () => p.loadEntries(),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.auto_stories),
             tooltip: 'On This Day',
@@ -61,16 +68,15 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Consumer2<JournalProvider, SettingsProvider>(
         builder: (context, provider, settings, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
           return SingleChildScrollView(
             child: Column(
               children: [
                 _buildCalendar(provider),
                 const SizedBox(height: AppTheme.spacingL),
-                _buildRecentEntries(provider, settings.hidePreviewsEnabled),
+                if (provider.isLoading)
+                  const _LoadingEntries()
+                else
+                  _buildRecentEntries(provider, settings.hidePreviewsEnabled),
               ],
             ),
           );
@@ -184,25 +190,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (recentEntries.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingXl),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingXl,
+          vertical: AppTheme.spacingXl,
+        ),
         child: Column(
           children: [
             Icon(
-              Icons.auto_stories_outlined,
-              size: 64,
+              Icons.edit_note,
+              size: 72,
               color: AppTheme.textHint,
             ),
             const SizedBox(height: AppTheme.spacingM),
             Text(
-              'No entries yet',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
+              'Start your first entry',
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: AppTheme.spacingS),
             Text(
-              'Tap + to create your first entry',
+              'Tap + to write something — even one line counts.',
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppTheme.spacingS),
+            Text(
+              DateFormat('EEEE, MMMM d').format(DateTime.now()),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textHint,
+                  ),
             ),
           ],
         ),
@@ -227,51 +242,114 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEntryCard(JournalEntry entry, bool hidePreview) {
-    return Card(
-      child: InkWell(
-        onTap: () => _viewEntry(entry),
-        borderRadius: BorderRadius.circular(AppTheme.radiusM),
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spacingM),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    entry.formattedDate,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const Spacer(),
-                  if (entry.imagePath != null)
-                    const Icon(
-                      Icons.image,
-                      size: 16,
-                      color: AppTheme.textSecondary,
+    return Dismissible(
+      key: ValueKey(entry.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingL),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingM,
+          vertical: AppTheme.spacingS,
+        ),
+        decoration: BoxDecoration(
+          color: AppTheme.errorColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        ),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      confirmDismiss: (_) => _showDeleteConfirmation(),
+      onDismissed: (_) => _onEntryDismissed(entry),
+      child: Card(
+        child: InkWell(
+          onTap: () => _viewEntry(entry),
+          onLongPress: () async {
+            final confirmed = await _showDeleteConfirmation();
+            if (confirmed) _onEntryDismissed(entry);
+          },
+          borderRadius: BorderRadius.circular(AppTheme.radiusM),
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      entry.formattedDate,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.spacingS),
-              if (hidePreview)
-                Text(
-                  'Preview hidden',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textHint,
-                        fontStyle: FontStyle.italic,
+                    const Spacer(),
+                    if (entry.imagePath != null)
+                      const Icon(
+                        Icons.image,
+                        size: 16,
+                        color: AppTheme.textSecondary,
                       ),
-                )
-              else
-                Text(
-                  entry.content,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  ],
                 ),
-            ],
+                const SizedBox(height: AppTheme.spacingS),
+                if (hidePreview)
+                  Text(
+                    'Preview hidden',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textHint,
+                          fontStyle: FontStyle.italic,
+                        ),
+                  )
+                else
+                  Text(
+                    entry.content,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _showDeleteConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete entry?'),
+        content: const Text('You can undo this for 8 seconds after deleting.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  void _onEntryDismissed(JournalEntry entry) {
+    final provider = Provider.of<JournalProvider>(context, listen: false);
+    provider.deleteEntry(entry.id);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Entry deleted'),
+        backgroundColor: AppTheme.errorColor,
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: Colors.white,
+          onPressed: () => provider.saveEntry(entry),
         ),
       ),
     );
@@ -319,5 +397,130 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => EntryEditorScreen(entry: entry),
       ),
     );
+  }
+}
+
+class _LoadingEntries extends StatelessWidget {
+  const _LoadingEntries();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(3, (_) => const _SkeletonEntryCard()),
+    );
+  }
+}
+
+class _SkeletonEntryCard extends StatefulWidget {
+  const _SkeletonEntryCard();
+
+  @override
+  State<_SkeletonEntryCard> createState() => _SkeletonEntryCardState();
+}
+
+class _SkeletonEntryCardState extends State<_SkeletonEntryCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.3, end: 0.7).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget _bar({double? width, double height = 12}) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (_, __) => Opacity(
+        opacity: _opacity.value,
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: AppTheme.textHint,
+            borderRadius: BorderRadius.circular(AppTheme.radiusS),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _bar(width: 100, height: 14),
+            const SizedBox(height: AppTheme.spacingS),
+            _bar(),
+            const SizedBox(height: AppTheme.spacingXs),
+            _bar(width: 220),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SyncStatusChip extends StatelessWidget {
+  final SyncStatus status;
+  final VoidCallback? onRetry;
+
+  const _SyncStatusChip({required this.status, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (status) {
+      case SyncStatus.synced:
+        return const SizedBox.shrink();
+      case SyncStatus.syncing:
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      case SyncStatus.offline:
+        return Padding(
+          padding: const EdgeInsets.only(right: AppTheme.spacingS),
+          child: Chip(
+            label: const Text('Offline',
+                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+            backgroundColor: AppTheme.dividerColor,
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        );
+      case SyncStatus.error:
+        return GestureDetector(
+          onTap: onRetry,
+          child: Padding(
+            padding: const EdgeInsets.only(right: AppTheme.spacingS),
+            child: Chip(
+              label: const Text('Sync error',
+                  style: TextStyle(fontSize: 11, color: Colors.white)),
+              backgroundColor: Colors.orange,
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        );
+    }
   }
 }
