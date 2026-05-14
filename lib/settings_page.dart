@@ -104,6 +104,125 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _showEditNameDialog() async {
+    final s = context.read<SettingsProvider>();
+    final user = _currentUser;
+    if (user == null) return;
+
+    final controller = TextEditingController(
+      text: user.displayName ?? '',
+    );
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: s.cardColor,
+        title: Text(
+          'Edit Profile Name',
+          style: TextStyle(color: s.textColor, fontFamily: s.fontFamily),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: TextStyle(
+            color: s.textColor,
+            fontSize: s.baseFontSize,
+            fontFamily: s.fontFamily,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Enter your name',
+            hintStyle: TextStyle(color: s.secondaryTextColor),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: s.secondaryTextColor),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: s.selectedAccentColor),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: s.secondaryTextColor)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isEmpty) return;
+              try {
+                await user.updateDisplayName(newName);
+                if (!mounted) return;
+                setState(() {}); // refresh _profileName getter
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile name updated.')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Failed to update name. Please try again.')),
+                );
+              }
+            },
+            child: Text(
+              'Save',
+              style: TextStyle(
+                color: s.selectedAccentColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+  }
+
+  Future<void> _removePasscode() async {
+    final s = context.read<SettingsProvider>();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: s.cardColor,
+        title: Text(
+          'Remove Passcode',
+          style: TextStyle(color: s.textColor, fontFamily: s.fontFamily),
+        ),
+        content: Text(
+          'Are you sure you want to remove your app passcode?',
+          style: TextStyle(
+            color: s.secondaryTextColor,
+            fontSize: s.baseFontSize,
+            fontFamily: s.fontFamily,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: s.secondaryTextColor)),
+          ),
+          TextButton(
+            onPressed: () async {
+              await _storage.delete(key: _key('app_passcode'));
+              if (!mounted) return;
+              setState(() => _pinIsSet = false);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Passcode removed.')),
+              );
+            },
+            child: const Text(
+              'Remove',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showResetDialog() {
     final s = context.read<SettingsProvider>();
     showDialog(
@@ -402,6 +521,31 @@ class _SettingsPageState extends State<SettingsPage> {
               s,
               onTap: _openPasscodePage,
             ),
+            if (_pinIsSet) ...[
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: _removePasscode,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Remove Passcode',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: s.baseFontSize,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: s.fontFamily,
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: s.secondaryTextColor.withOpacity(0.5),
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             _buildToggleSetting(
               'Hide Previews',
@@ -414,7 +558,8 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSectionHeader('ACCOUNT', s),
             const SizedBox(height: 12),
 
-            _buildNavigationSetting('Profile Name', _profileName, s),
+            _buildNavigationSetting('Profile Name', _profileName, s,
+                onTap: _showEditNameDialog),
             const SizedBox(height: 16),
 
             _buildTappableSetting('Reset Settings', s, onTap: _showResetDialog),
