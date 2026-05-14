@@ -3,34 +3,48 @@ import '/utils/app_theme.dart';
 import 'package:tinylines/utils/tutorial_helper.dart';
 import '/screens/home_screen.dart';
 
+// full screen tutorial shown to new users on first launch
 class TutorialPage extends StatefulWidget {
-  const TutorialPage({super.key});
+  final VoidCallback? onFinished;
+
+  const TutorialPage({super.key, this.onFinished});
 
   @override
   State<TutorialPage> createState() => _TutorialPageState();
 }
 
 class _TutorialPageState extends State<TutorialPage> {
+  // controls swiping between pages
   final PageController _controller = PageController();
+
+  // tracks which page the user is on
   int _currentPage = 0;
 
+  // content for each tutorial slide
   final List<Map<String, String>> _pages = [
     {
-      'title': 'Welcome',
-      'subtitle': 'TinyLines helps you journal every day.',
+      'title': 'Welcome to TinyLines',
+      'subtitle': 'Capture one meaningful moment every day.',
       'image': 'assets/tutorial1.png',
     },
     {
-      'title': 'Add Entries',
-      'subtitle': 'Create entries for any day you want.',
+      'title': 'Add an Entry',
+      'subtitle': 'Tap any day on the calendar to write about it, past or present.',
       'image': 'assets/tutorial2.png',
     },
     {
-      'title': 'Attach Photos',
-      'subtitle': 'Pick images from your camera roll.',
+      'title': 'Add a Photo',
+      'subtitle': 'Attach a photo to bring your memory to life.',
       'image': 'assets/tutorial3.png',
     },
   ];
+
+  // get avoid memory leaks
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,71 +85,160 @@ class _TutorialPageState extends State<TutorialPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    await TutorialHelper.setTutorialSeen();
-                    if (!mounted) return;
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const HomeScreen(),
-                      ),
-                    );
-                  },
+                onPressed: () async {
+                  await TutorialHelper.setTutorialSeen();
+                  if (!mounted) return;
+
+                  if (widget.onFinished != null) {
+                    widget.onFinished!();
+                    return;
+                  }
+
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomeScreen(),
+                    ),
+                  );
+                },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingXxl,
-                      vertical: AppTheme.spacingM,
+                      horizontal: AppTheme.spacingXl,
+                      vertical: AppTheme.spacingXl,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // slide title
+                        Text(
+                          page['title']!,
+                          style: Theme.of(context).textTheme.displayMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: AppTheme.spacingM),
+                        // slide subtitle
+                        Text(
+                          page['subtitle']!,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: AppTheme.spacingXl),
+                        // show image if one exists for this slide
+                        if (page['image'] != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              page['image']!,
+                              height: 280,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                      ],
                     ),
+                  );
+                },
+              ),
+            ),
+            // bottom bar with navigation controls
+            _buildBottomBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // builds the bottom nav bar
+  // shows "get started" on the last page, skip/next otherwise
+  Widget _buildBottomBar() {
+    final isLastPage = _currentPage == _pages.length - 1;
+
+    return Container(
+      padding: EdgeInsets.all(AppTheme.spacingM),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.dividerColor,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: isLastPage
+          ? SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  // mark tutorial as done so it doesn't show again
+                  await TutorialHelper.setTutorialSeen();
+                  if (!mounted) return;
+                  // go to home screen
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomeScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    vertical: AppTheme.spacingM,
                   ),
-                  child: const Text('Get Started'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                  ),
+                ),
+                child: const Text(
+                  'Get Started',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             )
-          : Padding(
-              padding: EdgeInsets.all(AppTheme.spacingM),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => _controller.jumpToPage(_pages.length - 1),
-                    child: Text(
-                      'Skip',
-                      style: TextStyle(color: AppTheme.primaryColor),
-                    ),
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // skip jumps to the last page
+                TextButton(
+                  onPressed: () => _controller.jumpToPage(_pages.length - 1),
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(color: AppTheme.primaryColor),
                   ),
-                  Row(
-                    children: List.generate(
-                      _pages.length,
-                      (index) => Container(
-                        margin: EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentPage == index
-                              ? AppTheme.primaryColor
-                              : AppTheme.dividerColor,
-                        ),
+                ),
+                // dot indicators showing current page position
+                Row(
+                  children: List.generate(
+                    _pages.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      // active dot is wider
+                      width: _currentPage == index ? 16 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: _currentPage == index
+                            ? AppTheme.primaryColor
+                            : AppTheme.dividerColor,
                       ),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => _controller.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    ),
-                    child: Text(
-                      'Next',
-                      style: TextStyle(color: AppTheme.primaryColor),
-                    ),
+                ),
+                // next animates to the following page
+                TextButton(
+                  onPressed: () => _controller.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
                   ),
-                ],
-              ),
+                  child: Text(
+                    'Next',
+                    style: TextStyle(color: AppTheme.primaryColor),
+                  ),
+                ),
+              ],
             ),
     );
   }

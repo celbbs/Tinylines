@@ -60,7 +60,7 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   String? _lastUserId;
-  Future<void>? _loadFuture;
+  Future<void>? _loadFuture = Future.value();
 
   // Tracks whether the user has passed the PIN lock screen during this session
   // Resets to false when a different user signs in
@@ -175,7 +175,15 @@ class _AuthGateState extends State<AuthGate> {
                     startupSnapshot.data ?? (false, null);
 
                 // Show tutorial before anything else on first launch
-                if (showTutorial) return const TutorialPage();
+                if (showTutorial) {
+                  return TutorialPage(
+                    onFinished: () {
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                  );
+                }
 
                 // If a PIN is set and the user hasn't unlocked this session then show the lock screen
                 final pinIsSet =
