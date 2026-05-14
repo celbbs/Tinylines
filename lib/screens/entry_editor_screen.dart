@@ -25,6 +25,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   File? _selectedImage;
   String? _existingImagePath;
+  bool _removeExistingImage = false;
   bool _isEdited = false;
   bool _isSaving = false;
 
@@ -294,6 +295,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
       if (image != null) {
         setState(() {
           _selectedImage = File(image.path);
+          _removeExistingImage = false;
           _isEdited = true;
         });
       }
@@ -305,6 +307,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   void _removeImage() {
     setState(() {
       _selectedImage = null;
+      _removeExistingImage = widget.entry?.imagePath != null;
       _existingImagePath = null;
       _isEdited = true;
     });
@@ -341,7 +344,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
           widget.entry!.id,
           content,
           newImageFile: _selectedImage,
-          removeImage: _existingImagePath != null && _selectedImage == null,
+          removeImage: _removeExistingImage,
         );
       }
 

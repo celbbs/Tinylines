@@ -5,7 +5,9 @@ import '/screens/home_screen.dart';
 
 // full screen tutorial shown to new users on first launch
 class TutorialPage extends StatefulWidget {
-  const TutorialPage({super.key});
+  final VoidCallback? onFinished;
+
+  const TutorialPage({super.key, this.onFinished});
 
   @override
   State<TutorialPage> createState() => _TutorialPageState();
@@ -48,18 +50,60 @@ class _TutorialPageState extends State<TutorialPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                itemCount: _pages.length,
-                // update current page index on swipe
-                onPageChanged: (index) => setState(() => _currentPage = index),
-                itemBuilder: (context, index) {
-                  final page = _pages[index];
-                  return Padding(
+      body: PageView.builder(
+        controller: _controller,
+        itemCount: _pages.length,
+        onPageChanged: (index) => setState(() => _currentPage = index),
+        itemBuilder: (context, index) {
+          final page = _pages[index];
+          return Padding(
+            padding: EdgeInsets.all(AppTheme.spacingXl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (page['image'] != null)
+                  Image.asset(page['image']!, height: 250),
+                SizedBox(height: AppTheme.spacingXl),
+                Text(
+                  page['title']!,
+                  style: Theme.of(context).textTheme.displayMedium,
+                ),
+                SizedBox(height: AppTheme.spacingM),
+                Text(
+                  page['subtitle']!,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      bottomSheet: _currentPage == _pages.length - 1
+          ? Padding(
+              padding: EdgeInsets.all(AppTheme.spacingM),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                onPressed: () async {
+                  await TutorialHelper.setTutorialSeen();
+                  if (!mounted) return;
+
+                  if (widget.onFinished != null) {
+                    widget.onFinished!();
+                    return;
+                  }
+
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomeScreen(),
+                    ),
+                  );
+                },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(
                       horizontal: AppTheme.spacingXl,
                       vertical: AppTheme.spacingXl,
