@@ -60,7 +60,7 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   String? _lastUserId;
-  Future<void>? _loadFuture;
+  Future<void>? _loadFuture = Future.value();
 
   // Tracks whether the user has passed the PIN lock screen during this session
   // Resets to false when a different user signs in
