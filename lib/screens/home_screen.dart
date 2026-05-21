@@ -325,29 +325,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: AppTheme.textHint,
                         fontStyle: FontStyle.italic,
                       ),
-                  ],
+                )
+              else
+                Text(
+                  entry.content,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
-                const SizedBox(height: AppTheme.spacingS),
-                if (hidePreview)
-                  Text(
-                    'Preview hidden',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textHint,
-                          fontStyle: FontStyle.italic,
-                        ),
-                  )
-                else
-                  Text(
-                    entry.content,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
               ],
             ),
           ),
         ),
-      ),
     );
   }
 
