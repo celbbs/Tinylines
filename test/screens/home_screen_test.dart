@@ -78,13 +78,13 @@ JournalEntry makeEntry(String id, DateTime date, String content) {
 void main() {
   group('HomeScreen', () {
     group('empty state', () {
-      testWidgets('shows "No entries yet" when there are no entries',
+      testWidgets('shows "Start your first entry" when there are no entries',
           (tester) async {
         final provider = FakeJournalProvider(fakeEntries: []);
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
-        expect(find.text('No entries yet'), findsOneWidget);
+        expect(find.text('Start your first entry'), findsOneWidget);
       });
 
       testWidgets('shows hint text to tap + when no entries',
@@ -93,8 +93,10 @@ void main() {
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
-        expect(find.text('Tap + to create your first entry'),
-            findsOneWidget);
+        expect(
+          find.text('Tap + to write something — even one line counts.'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('shows FAB add button', (tester) async {
@@ -156,6 +158,8 @@ void main() {
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
+        // Scroll the card into view — calendar height varies by month/year
+        await tester.ensureVisible(find.text('Tappable entry'));
         await tester.tap(find.text('Tappable entry'));
         await tester.pumpAndSettle();
 

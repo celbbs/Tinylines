@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/journal_provider.dart';
+import '../providers/settings_provider.dart';
 import '../models/journal_entry.dart';
 import '../utils/app_theme.dart';
+
+enum _SaveStatus { clean, unsaved, saving, saved }
 
 class EntryEditorScreen extends StatefulWidget {
   final JournalEntry? entry; // null for new entry
@@ -28,6 +32,8 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   bool _removeExistingImage = false;
   bool _isEdited = false;
   bool _isSaving = false;
+  _SaveStatus _saveStatus = _SaveStatus.clean;
+  Timer? _autoSaveTimer;
 
   @override
   void initState() {
@@ -39,6 +45,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
 
   @override
   void dispose() {
+    _autoSaveTimer?.cancel();
     _contentController.dispose();
     super.dispose();
   }
@@ -46,7 +53,51 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   void _onContentChanged() {
     setState(() {
       _isEdited = true;
+      if (!_isNewEntry) _saveStatus = _SaveStatus.unsaved;
     });
+    if (!_isNewEntry) _scheduleAutoSave();
+  }
+
+  void _scheduleAutoSave() {
+    _autoSaveTimer?.cancel();
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final seconds =
+        int.tryParse(settings.autoSaveInterval.split(' ').first) ?? 30;
+    _autoSaveTimer = Timer(Duration(seconds: seconds), _performAutoSave);
+  }
+
+  Future<void> _performAutoSave() async {
+    if (!mounted || _contentController.text.isEmpty) return;
+    setState(() {
+      _saveStatus = _SaveStatus.saving;
+      _isSaving = true;
+    });
+    try {
+      final provider = Provider.of<JournalProvider>(context, listen: false);
+      await provider.updateEntry(
+        widget.entry!.id,
+        _contentController.text,
+        newImageFile: _selectedImage,
+        removeImage: _existingImagePath != null && _selectedImage == null,
+      );
+      if (mounted) {
+        setState(() {
+          _isEdited = false;
+          _saveStatus = _SaveStatus.saved;
+          _isSaving = false;
+        });
+        Timer(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _saveStatus = _SaveStatus.clean);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _saveStatus = _SaveStatus.unsaved;
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   bool get _isNewEntry => widget.entry == null;
@@ -233,6 +284,36 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
     );
   }
 
+  Widget _buildSaveStatusText() {
+    switch (_saveStatus) {
+      case _SaveStatus.unsaved:
+        return Text(
+          'Unsaved changes',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+        );
+      case _SaveStatus.saving:
+        return Text(
+          'Saving...',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+        );
+      case _SaveStatus.saved:
+        return Text(
+          'Saved ✓',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.successColor,
+                fontWeight: FontWeight.w600,
+              ),
+        );
+      case _SaveStatus.clean:
+        return const SizedBox.shrink();
+    }
+  }
+
   Widget _buildBottomBar() {
     final wordCount = _contentController.text
         .split(RegExp(r'\s+'))
@@ -277,7 +358,9 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
                   vertical: AppTheme.spacingS,
                 ),
               ),
-            ),
+            )
+          else
+            _buildSaveStatusText(),
         ],
       ),
     );
@@ -319,6 +402,7 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
       return;
     }
 
+    _autoSaveTimer?.cancel();
     setState(() {
       _isSaving = true;
     });
@@ -370,26 +454,43 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   }
 
   Future<void> _deleteEntry() async {
-    try {
-      final provider = Provider.of<JournalProvider>(context, listen: false);
-      final messenger = ScaffoldMessenger.of(context);
-      final navigator = Navigator.of(context);
+    final entry = widget.entry!;
+    final provider = Provider.of<JournalProvider>(context, listen: false);
 
-      await provider.deleteEntry(widget.entry!.id);
+    // Capture before popping so context remains valid
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
 
-      if (!mounted) return;
+    navigator.pop();
 
-      navigator.pop();
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Entry deleted'),
-          backgroundColor: AppTheme.errorColor,
-          duration: Duration(seconds: 2),
+    bool undone = false;
+    Timer? deleteTimer;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Entry deleted'),
+        backgroundColor: AppTheme.errorColor,
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: Colors.white,
+          onPressed: () {
+            undone = true;
+            deleteTimer?.cancel();
+          },
         ),
-      );
-    } catch (e) {
-      _showErrorSnackBar('Failed to delete entry: $e');
-    }
+      ),
+    );
+
+    deleteTimer = Timer(const Duration(seconds: 8), () async {
+      if (!undone) {
+        try {
+          await provider.deleteEntry(entry.id);
+        } catch (e) {
+          debugPrint('Failed to delete entry: $e');
+        }
+      }
+    });
   }
 
   Future<bool> _showDiscardDialog() async {
