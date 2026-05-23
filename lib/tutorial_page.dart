@@ -39,7 +39,7 @@ class _TutorialPageState extends State<TutorialPage> {
     },
   ];
 
-  // get avoid memory leaks
+  // avoid memory leaks
   @override
   void dispose() {
     _controller.dispose();
@@ -79,73 +79,7 @@ class _TutorialPageState extends State<TutorialPage> {
           );
         },
       ),
-      bottomSheet: _currentPage == _pages.length - 1
-          ? Padding(
-              padding: EdgeInsets.all(AppTheme.spacingM),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                onPressed: () async {
-                  await TutorialHelper.setTutorialSeen();
-                  if (!mounted) return;
-
-                  if (widget.onFinished != null) {
-                    widget.onFinished!();
-                    return;
-                  }
-
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const HomeScreen(),
-                    ),
-                  );
-                },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingXl,
-                      vertical: AppTheme.spacingXl,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // slide title
-                        Text(
-                          page['title']!,
-                          style: Theme.of(context).textTheme.displayMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: AppTheme.spacingM),
-                        // slide subtitle
-                        Text(
-                          page['subtitle']!,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: AppTheme.spacingXl),
-                        // show image if one exists for this slide
-                        if (page['image'] != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.asset(
-                              page['image']!,
-                              height: 280,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            // bottom bar with navigation controls
-            _buildBottomBar(),
-          ],
-        ),
-      ),
+      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
@@ -170,10 +104,12 @@ class _TutorialPageState extends State<TutorialPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  // mark tutorial as done so it doesn't show again
                   await TutorialHelper.setTutorialSeen();
                   if (!mounted) return;
-                  // go to home screen
+                  if (widget.onFinished != null) {
+                    widget.onFinished!();
+                    return;
+                  }
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(

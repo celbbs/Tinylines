@@ -48,8 +48,7 @@ class StorageService {
       // Create entry from metadata and content
       final entry = JournalEntry.fromJson(metadataJson);
       return entry.copyWith(content: content);
-    } catch (e) {
-      print('Error loading entry $id: $e');
+    } catch (_) {
       return null;
     }
   }
@@ -77,8 +76,7 @@ class StorageService {
       // Sort by date, newest first
       entries.sort((a, b) => b.date.compareTo(a.date));
       return entries;
-    } catch (e) {
-      print('Error loading entries: $e');
+    } catch (_) {
       return [];
     }
   }
@@ -105,9 +103,7 @@ class StorageService {
           await imageFile.delete();
         }
       }
-    } catch (e) {
-      print('Error deleting entry $id: $e');
-    }
+    } catch (_) {}
   }
 
   /// Gets all dates that have entries
@@ -132,8 +128,7 @@ class StorageService {
 
       final savedImage = await imageFile.copy(newPath);
       return savedImage.path;
-    } catch (e) {
-      print('Error saving image: $e');
+    } catch (_) {
       rethrow;
     }
   }
@@ -145,9 +140,7 @@ class StorageService {
       if (await imageFile.exists()) {
         await imageFile.delete();
       }
-    } catch (e) {
-      print('Error deleting image: $e');
-    }
+    } catch (_) {}
   }
 
   /// Helper to format date to ID
