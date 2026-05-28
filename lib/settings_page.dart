@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -72,21 +71,21 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-Future<void> _signOut() async {
-  try {
-    await FirebaseAuth.instance.signOut();
-    if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const AuthScreen()),
-      (route) => false,
-    );
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Failed to log out. Please try again.')),
-    );
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to log out. Please try again.')),
+      );
+    }
   }
-}
 
   // sends a password reset email to the user's address
   Future<void> _sendPasswordReset() async {
@@ -178,18 +177,20 @@ Future<void> _signOut() async {
             onPressed: () async {
               final newName = controller.text.trim();
               if (newName.isEmpty) return;
+              final nav = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               try {
                 await user.updateDisplayName(newName);
                 if (!mounted) return;
                 setState(() {}); // refresh _profileName getter
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                nav.pop();
+                messenger.showSnackBar(
                   const SnackBar(content: Text('Profile name updated.')),
                 );
               } catch (e) {
                 if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                nav.pop();
+                messenger.showSnackBar(
                   const SnackBar(content: Text('Failed to update name. Please try again.')),
                 );
               }
@@ -234,11 +235,13 @@ Future<void> _signOut() async {
           ),
           TextButton(
             onPressed: () async {
+              final nav = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               await _storage.delete(key: _key('app_passcode'));
               if (!mounted) return;
               setState(() => _pinIsSet = false);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              nav.pop();
+              messenger.showSnackBar(
                 const SnackBar(content: Text('Passcode removed.')),
               );
             },
@@ -277,10 +280,12 @@ Future<void> _signOut() async {
           ),
           TextButton(
             onPressed: () async {
+              final nav = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               await s.resetToDefaults();
               if (!mounted) return;
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
+              nav.pop();
+              messenger.showSnackBar(
                 const SnackBar(content: Text('Settings reset to defaults.')),
               );
             },
@@ -549,7 +554,7 @@ Future<void> _signOut() async {
                     ),
                     Icon(
                       Icons.chevron_right,
-                      color: s.secondaryTextColor.withOpacity(0.5),
+                      color: s.secondaryTextColor.withValues(alpha: 0.5),
                       size: 20,
                     ),
                   ],
@@ -572,10 +577,10 @@ Future<void> _signOut() async {
               'Show Tutorial',
               s,
               onTap: () async {
+                final nav = Navigator.of(context);
                 await TutorialHelper.setTutorialSeen(false);
                 if (!mounted) return;
-                Navigator.pushReplacement(
-                  context,
+                nav.pushReplacement(
                   MaterialPageRoute(builder: (_) => const TutorialPage()),
                 );
               },
@@ -586,12 +591,13 @@ Future<void> _signOut() async {
             _buildSectionHeader('ACCOUNT', s),
             const SizedBox(height: 12),
 
-            // shows display name
-            _buildNavigationSetting('Profile Name', _profileName, s),
+            // shows display name — tap to edit
+            _buildNavigationSetting('Profile Name', _profileName, s,
+                onTap: _showEditNameDialog),
             const SizedBox(height: 16),
 
             // shows email as read-only
-            _buildNavigationSetting('Email', _userEmail, s),
+            _buildReadOnlySetting('Email', _userEmail, s),
             const SizedBox(height: 16),
 
             // sends a password reset email
@@ -800,7 +806,7 @@ Future<void> _signOut() async {
               const SizedBox(width: 4),
               Icon(
                 Icons.chevron_right,
-                color: s.secondaryTextColor.withOpacity(0.5),
+                color: s.secondaryTextColor.withValues(alpha: 0.5),
                 size: 20,
               ),
             ],
@@ -820,11 +826,29 @@ Future<void> _signOut() async {
           _buildSettingLabel(label, s),
           Icon(
             Icons.chevron_right,
-            color: s.secondaryTextColor.withOpacity(0.5),
+            color: s.secondaryTextColor.withValues(alpha: 0.5),
             size: 20,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildReadOnlySetting(String label, String value, SettingsProvider s) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildSettingLabel(label, s),
+        if (value.isNotEmpty)
+          Text(
+            value,
+            style: TextStyle(
+              color: s.secondaryTextColor,
+              fontSize: s.baseFontSize,
+              fontFamily: s.fontFamily,
+            ),
+          ),
+      ],
     );
   }
 
@@ -845,7 +869,7 @@ Future<void> _signOut() async {
           ),
           Icon(
             Icons.chevron_right,
-            color: s.secondaryTextColor.withOpacity(0.5),
+            color: s.secondaryTextColor.withValues(alpha: 0.5),
             size: 20,
           ),
         ],

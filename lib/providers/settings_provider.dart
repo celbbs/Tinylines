@@ -102,7 +102,7 @@ class SettingsProvider extends ChangeNotifier {
 
     if (accentColorValue != null) {
       selectedAccentColor =
-          Color(int.tryParse(accentColorValue) ?? defaultAccentColor.value);
+          Color(int.tryParse(accentColorValue) ?? defaultAccentColor.toARGB32());
     }
 
     notifyListeners();
@@ -123,7 +123,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setAccentColor(Color color) async {
     selectedAccentColor = color;
     notifyListeners();
-    await _save('accentColor', color.value.toString());
+    await _save('accentColor', color.toARGB32().toString());
   }
 
   Future<void> setFontSize(String size) async {
@@ -182,7 +182,7 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
 
     await _save('theme',               selectedTheme);
-    await _save('accentColor',         selectedAccentColor.value.toString());
+    await _save('accentColor',         selectedAccentColor.toARGB32().toString());
     await _save('fontSize',            selectedFontSize);
     await _save('fontStyle',           selectedFontStyle);
     await _save('dailyPromptEnabled',  dailyPromptEnabled.toString());
@@ -259,7 +259,7 @@ class SettingsProvider extends ChangeNotifier {
 
   // ThemeData
   /// Full MaterialApp-compatible ThemeData derived from current settings
-  /// Wrap MaterialApp with Consumer<SettingsProvider> and pass this as `theme`
+  /// Wrap MaterialApp with Consumer\<SettingsProvider\> and pass this as `theme`
   ThemeData get themeData {
     final isDark = selectedTheme == 'Dark';
     final base = isDark ? ThemeData.dark() : ThemeData.light();
@@ -315,7 +315,7 @@ class SettingsProvider extends ChangeNotifier {
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? selectedAccentColor.withOpacity(0.5)
+              ? selectedAccentColor.withValues(alpha: 0.5)
               : null,
         ),
       ),

@@ -46,9 +46,7 @@ class NotificationService {
       });
 
       // Handle taps
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        print('Notification tapped: ${message.data}');
-      });
+      FirebaseMessaging.onMessageOpenedApp.listen((_) {});
     }
   }
 

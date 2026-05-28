@@ -287,43 +287,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // builds a single entry card with date, content preview, and image indicator
   Widget _buildEntryCard(JournalEntry entry, bool hidePreview) {
-    return Card(
-      child: InkWell(
-        onTap: () => _viewEntry(entry),
-        borderRadius: BorderRadius.circular(AppTheme.radiusM),
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spacingM),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  // entry date in primary color
-                  Text(
-                    entry.formattedDate,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const Spacer(),
-                  // show image icon if entry has a photo
-                  if (entry.imagePath != null)
-                    const Icon(
-                      Icons.image,
-                      size: 16,
-                      color: AppTheme.textSecondary,
+    return Dismissible(
+      key: ValueKey(entry.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppTheme.spacingL),
+        decoration: BoxDecoration(
+          color: AppTheme.errorColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusM),
+        ),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      confirmDismiss: (_) => _showDeleteConfirmation(),
+      onDismissed: (_) => _onEntryDismissed(entry),
+      child: Card(
+        child: InkWell(
+          onTap: () => _viewEntry(entry),
+          borderRadius: BorderRadius.circular(AppTheme.radiusM),
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // entry date in primary color
+                    Text(
+                      entry.formattedDate,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.spacingS),
-              // hide content preview if privacy setting is on
-              if (hidePreview)
-                Text(
-                  'Preview hidden',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textHint,
-                        fontStyle: FontStyle.italic,
+                    const Spacer(),
+                    // show image icon if entry has a photo
+                    if (entry.imagePath != null)
+                      const Icon(
+                        Icons.image,
+                        size: 16,
+                        color: AppTheme.textSecondary,
                       ),
                   ],
                 ),
