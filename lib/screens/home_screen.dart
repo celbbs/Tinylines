@@ -231,41 +231,44 @@ class _HomeScreenState extends State<HomeScreen> {
     final recentEntries = provider.getRecentEntries(limit: 5);
 
     // show empty state if user has no entries yet
-    if (recentEntries.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacingXl,
-          vertical: AppTheme.spacingXl,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.edit_note,
-              size: 72,
-              color: AppTheme.textHint,
-            ),
-            const SizedBox(height: AppTheme.spacingM),
-            Text(
-              'Start your first entry',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppTheme.spacingS),
-            Text(
-              'Tap + to write something — even one line counts.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppTheme.spacingS),
-            Text(
-              DateFormat('EEEE, MMMM d').format(DateTime.now()),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textHint,
-                  ),
-            ),
-          ],
-        ),
-      );
-    }
+if (recentEntries.isEmpty) {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacingXl,
+        vertical: AppTheme.spacingXl,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.edit_note,
+            size: 72,
+            color: AppTheme.textHint,
+          ),
+          const SizedBox(height: AppTheme.spacingM),
+          Text(
+            'Start your first entry',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: AppTheme.spacingS),
+          Text(
+            'Tap + to add something',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppTheme.spacingS),
+          Text(
+            DateFormat('EEEE, MMMM d').format(DateTime.now()),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textHint,
+                ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
     // show list of recent entries
     return Column(
