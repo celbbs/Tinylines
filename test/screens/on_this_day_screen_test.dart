@@ -75,9 +75,14 @@ void main() {
       expect(find.text('Today memory'), findsOneWidget);
     });
 
-    testWidgets('does not display entries that do not match today', (tester) async {
+    testWidgets('does not display entries that do not match today', (
+      tester,
+    ) async {
       final notToday = DateTime.now().subtract(const Duration(days: 1));
-      final entry = JournalEntry.forDate(date: notToday, content: 'Yesterday memory');
+      final entry = JournalEntry.forDate(
+        date: notToday,
+        content: 'Yesterday memory',
+      );
       mockFirestore._entries.add(entry);
       await provider.loadEntries();
 

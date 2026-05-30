@@ -5,13 +5,10 @@ class FirebaseAuthService implements AuthService {
   final FirebaseAuth _firebaseAuth;
 
   FirebaseAuthService({FirebaseAuth? firebaseAuth})
-      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   @override
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     await _firebaseAuth.signInWithEmailAndPassword(
       email: email,
       password: password,
@@ -36,4 +33,8 @@ class FirebaseAuthService implements AuthService {
 
   @override
   bool get isSignedIn => _firebaseAuth.currentUser != null;
+
+  @override
+  String? get currentUserName =>
+      _firebaseAuth.currentUser?.displayName?.split(' ').first;
 }

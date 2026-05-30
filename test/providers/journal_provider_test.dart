@@ -27,9 +27,9 @@ void main() {
 
   // Builds a provider with both mocks injected
   JournalProvider makeProvider() => JournalProvider(
-        firestoreService: mockFirestore,
-        storageService: mockStorage,
-      );
+    firestoreService: mockFirestore,
+    storageService: mockStorage,
+  );
 
   setUp(() {
     mockFirestore = MockFirestoreService();
@@ -100,7 +100,9 @@ void main() {
       final provider = makeProvider();
       await provider.loadEntries();
 
-      final result = provider.getEntryForDate(DateTime(2025, 6, 15, 23, 59, 59));
+      final result = provider.getEntryForDate(
+        DateTime(2025, 6, 15, 23, 59, 59),
+      );
       expect(result, isNotNull);
     });
   });
@@ -135,15 +137,19 @@ void main() {
       final provider = makeProvider();
       await provider.loadEntries();
 
-      expect(provider.entryDates,
-          containsAll([DateTime(2025, 6, 15), DateTime(2025, 7, 4)]));
+      expect(
+        provider.entryDates,
+        containsAll([DateTime(2025, 6, 15), DateTime(2025, 7, 4)]),
+      );
       expect(provider.entryDates.length, equals(2));
     });
   });
 
   group('saveEntry', () {
     test('calls FirestoreService.saveEntry and adds to entries', () async {
-      when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
+      when(
+        mockFirestore.saveEntry(any),
+      ).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
       await provider.loadEntries();
@@ -156,7 +162,9 @@ void main() {
     });
 
     test('also calls StorageService.saveEntry as local cache', () async {
-      when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
+      when(
+        mockFirestore.saveEntry(any),
+      ).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
       await provider.loadEntries();
@@ -168,9 +176,15 @@ void main() {
     });
 
     test('updates existing entry rather than duplicating', () async {
-      final original = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'Original');
+      final original = makeEntry(
+        '2025-09-01',
+        DateTime(2025, 9, 1),
+        'Original',
+      );
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [original]);
-      when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
+      when(
+        mockFirestore.saveEntry(any),
+      ).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
       await provider.loadEntries();
@@ -182,40 +196,53 @@ void main() {
       expect(provider.entries.first.content, equals('Updated'));
     });
 
-    test('saves image locally and embeds path in entry when imageFile provided',
-        () async {
-      when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
-      when(mockStorage.saveImage(any, any))
-          .thenAnswer((_) async => '/local/path/2025-09-01.jpg');
+    test(
+      'saves image locally and embeds path in entry when imageFile provided',
+      () async {
+        when(
+          mockFirestore.saveEntry(any),
+        ).thenAnswer((_) => Future<void>.value());
+        when(
+          mockStorage.saveImage(any, any),
+        ).thenAnswer((_) async => '/local/path/2025-09-01.jpg');
 
-      final provider = makeProvider();
-      await provider.loadEntries();
+        final provider = makeProvider();
+        await provider.loadEntries();
 
-      final entry = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'With image');
-      final fakeFile = File('/fake/image.jpg');
+        final entry = makeEntry(
+          '2025-09-01',
+          DateTime(2025, 9, 1),
+          'With image',
+        );
+        final fakeFile = File('/fake/image.jpg');
 
-      await provider.saveEntry(entry, imageFile: fakeFile);
+        await provider.saveEntry(entry, imageFile: fakeFile);
 
-      // Image saved to local storage
-      verify(mockStorage.saveImage(fakeFile, '2025-09-01')).called(1);
+        // Image saved to local storage
+        verify(mockStorage.saveImage(fakeFile, '2025-09-01')).called(1);
 
-      // Entry saved to Firestore with the embedded local path
-      final captured =
-          verify(mockFirestore.saveEntry(captureAny)).captured.single
-              as JournalEntry;
-      expect(captured.imagePath, equals('/local/path/2025-09-01.jpg'));
+        // Entry saved to Firestore with the embedded local path
+        final captured =
+            verify(mockFirestore.saveEntry(captureAny)).captured.single
+                as JournalEntry;
+        expect(captured.imagePath, equals('/local/path/2025-09-01.jpg'));
 
-      // In-memory entry also has the path
-      expect(provider.entries.first.imagePath,
-          equals('/local/path/2025-09-01.jpg'));
-    });
+        // In-memory entry also has the path
+        expect(
+          provider.entries.first.imagePath,
+          equals('/local/path/2025-09-01.jpg'),
+        );
+      },
+    );
   });
 
   group('deleteEntry', () {
     test('calls FirestoreService.deleteEntry and removes from list', () async {
       final entry = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'To delete');
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
-      when(mockFirestore.deleteEntry(any)).thenAnswer((_) => Future<void>.value());
+      when(
+        mockFirestore.deleteEntry(any),
+      ).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
       await provider.loadEntries();
@@ -226,26 +253,40 @@ void main() {
       expect(provider.entries, isEmpty);
     });
 
-    test('also calls StorageService.deleteEntry as local cache cleanup',
-        () async {
-      final entry = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'To delete');
-      when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
-      when(mockFirestore.deleteEntry(any)).thenAnswer((_) => Future<void>.value());
+    test(
+      'also calls StorageService.deleteEntry as local cache cleanup',
+      () async {
+        final entry = makeEntry(
+          '2025-09-01',
+          DateTime(2025, 9, 1),
+          'To delete',
+        );
+        when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
+        when(
+          mockFirestore.deleteEntry(any),
+        ).thenAnswer((_) => Future<void>.value());
 
-      final provider = makeProvider();
-      await provider.loadEntries();
+        final provider = makeProvider();
+        await provider.loadEntries();
 
-      await provider.deleteEntry('2025-09-01');
+        await provider.deleteEntry('2025-09-01');
 
-      verify(mockStorage.deleteEntry('2025-09-01')).called(1);
-    });
+        verify(mockStorage.deleteEntry('2025-09-01')).called(1);
+      },
+    );
   });
 
   group('updateEntry', () {
     test('updates content of existing entry', () async {
-      final entry = makeEntry('2025-09-01', DateTime(2025, 9, 1), 'Old content');
+      final entry = makeEntry(
+        '2025-09-01',
+        DateTime(2025, 9, 1),
+        'Old content',
+      );
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
-      when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
+      when(
+        mockFirestore.saveEntry(any),
+      ).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
       await provider.loadEntries();
@@ -265,13 +306,18 @@ void main() {
         updatedAt: DateTime(2025, 9, 1),
       );
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
-      when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
+      when(
+        mockFirestore.saveEntry(any),
+      ).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
       await provider.loadEntries();
 
-      await provider.updateEntry('2025-09-01', 'Removed image',
-          removeImage: true);
+      await provider.updateEntry(
+        '2025-09-01',
+        'Removed image',
+        removeImage: true,
+      );
 
       expect(provider.entries.first.imagePath, isNull);
     });
@@ -286,13 +332,18 @@ void main() {
         updatedAt: DateTime(2025, 9, 1),
       );
       when(mockFirestore.loadAllEntries()).thenAnswer((_) async => [entry]);
-      when(mockFirestore.saveEntry(any)).thenAnswer((_) => Future<void>.value());
+      when(
+        mockFirestore.saveEntry(any),
+      ).thenAnswer((_) => Future<void>.value());
 
       final provider = makeProvider();
       await provider.loadEntries();
 
-      await provider.updateEntry('2025-09-01', 'Removed image',
-          removeImage: true);
+      await provider.updateEntry(
+        '2025-09-01',
+        'Removed image',
+        removeImage: true,
+      );
 
       verify(mockStorage.deleteImage('/path/to/image.jpg')).called(1);
     });
@@ -359,8 +410,9 @@ void main() {
       final june2025 = provider.getEntriesForMonth(2025, 6);
       expect(june2025, hasLength(2));
       expect(
-          june2025.every((e) => e.date.year == 2025 && e.date.month == 6),
-          isTrue);
+        june2025.every((e) => e.date.year == 2025 && e.date.month == 6),
+        isTrue,
+      );
     });
 
     test('returns empty list when no entries in that month', () async {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/journal_provider.dart';
 import '../models/journal_entry.dart';
 import '../utils/app_theme.dart';
@@ -10,10 +9,13 @@ import 'entry_editor_screen.dart';
 import 'on_this_day_screen.dart';
 import '../settings_page.dart';
 import '../providers/settings_provider.dart';
+import '../services/auth_service.dart';
+import '../services/firebase_auth_service.dart';
 
 // shows calendar and recent entries
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final AuthService? authService;
+  const HomeScreen({super.key, this.authService});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -31,11 +33,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _selectedDay = _focusedDay;
   }
 
+  AuthService get _auth => widget.authService ?? FirebaseAuthService();
+
   // returns a greeting based on time of day and user's display name
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    final user = FirebaseAuth.instance.currentUser;
-    final name = user?.displayName?.split(' ').first ?? 'there';
+    final name = _auth.currentUserName ?? 'there';
 
     if (hour < 12) return 'Good morning, $name';
     if (hour < 17) return 'Good afternoon, $name';
@@ -46,13 +49,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildGreeting() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppTheme.spacingM, AppTheme.spacingM, AppTheme.spacingM, 0,
+        AppTheme.spacingM,
+        AppTheme.spacingM,
+        AppTheme.spacingM,
+        0,
       ),
       child: Text(
         _getGreeting(),
-        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -69,9 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const SettingsPage(),
-              ),
+              MaterialPageRoute(builder: (_) => const SettingsPage()),
             );
           },
         ),
@@ -89,9 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const OnThisDayScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const OnThisDayScreen()),
               );
             },
           ),
@@ -156,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _focusedDay = focusedDay;
         },
         calendarStyle: CalendarStyle(
-          // today shown 
+          // today shown
           todayDecoration: BoxDecoration(
             color: AppTheme.accentColor.withValues(alpha: 0.3),
             shape: BoxShape.circle,
@@ -179,9 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppTheme.successColor,
             shape: BoxShape.circle,
           ),
-          defaultTextStyle: const TextStyle(
-            color: AppTheme.textPrimary,
-          ),
+          defaultTextStyle: const TextStyle(color: AppTheme.textPrimary),
           weekendTextStyle: TextStyle(
             color: AppTheme.textPrimary.withValues(alpha: 0.6),
           ),
@@ -231,44 +231,40 @@ class _HomeScreenState extends State<HomeScreen> {
     final recentEntries = provider.getRecentEntries(limit: 5);
 
     // show empty state if user has no entries yet
-if (recentEntries.isEmpty) {
-  return Center(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingXl,
-        vertical: AppTheme.spacingXl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.edit_note,
-            size: 72,
-            color: AppTheme.textHint,
+    if (recentEntries.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingXl,
+            vertical: AppTheme.spacingXl,
           ),
-          const SizedBox(height: AppTheme.spacingM),
-          Text(
-            'Start your first entry',
-            style: Theme.of(context).textTheme.headlineSmall,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(Icons.edit_note, size: 72, color: AppTheme.textHint),
+              const SizedBox(height: AppTheme.spacingM),
+              Text(
+                'Start your first entry',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: AppTheme.spacingS),
+              Text(
+                'Tap + to add something',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppTheme.spacingS),
+              Text(
+                DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textHint),
+              ),
+            ],
           ),
-          const SizedBox(height: AppTheme.spacingS),
-          Text(
-            'Tap + to add something',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AppTheme.spacingS),
-          Text(
-            DateFormat('EEEE, MMMM d').format(DateTime.now()),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textHint,
-                ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+        ),
+      );
+    }
 
     // show list of recent entries
     return Column(
@@ -319,9 +315,9 @@ if (recentEntries.isEmpty) {
                     Text(
                       entry.formattedDate,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const Spacer(),
                     // show image icon if entry has a photo
@@ -338,9 +334,9 @@ if (recentEntries.isEmpty) {
                   Text(
                     'Preview hidden',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textHint,
-                          fontStyle: FontStyle.italic,
-                        ),
+                      color: AppTheme.textHint,
+                      fontStyle: FontStyle.italic,
+                    ),
                   )
                 else
                   Text(
@@ -417,9 +413,7 @@ if (recentEntries.isEmpty) {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => const EntryEditorScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const EntryEditorScreen()),
       );
     }
   }
@@ -428,9 +422,7 @@ if (recentEntries.isEmpty) {
   void _createEntryForDate(DateTime date) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EntryEditorScreen(date: date),
-      ),
+      MaterialPageRoute(builder: (context) => EntryEditorScreen(date: date)),
     );
   }
 
@@ -438,9 +430,7 @@ if (recentEntries.isEmpty) {
   void _viewEntry(JournalEntry entry) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EntryEditorScreen(entry: entry),
-      ),
+      MaterialPageRoute(builder: (context) => EntryEditorScreen(entry: entry)),
     );
   }
 }
@@ -545,8 +535,10 @@ class _SyncStatusChip extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(right: AppTheme.spacingS),
           child: Chip(
-            label: const Text('Offline',
-                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+            label: const Text(
+              'Offline',
+              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+            ),
             backgroundColor: AppTheme.dividerColor,
             padding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
@@ -558,8 +550,10 @@ class _SyncStatusChip extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(right: AppTheme.spacingS),
             child: Chip(
-              label: const Text('Sync error',
-                  style: TextStyle(fontSize: 11, color: Colors.white)),
+              label: const Text(
+                'Sync error',
+                style: TextStyle(fontSize: 11, color: Colors.white),
+              ),
               backgroundColor: Colors.orange,
               padding: EdgeInsets.zero,
               visualDensity: VisualDensity.compact,
