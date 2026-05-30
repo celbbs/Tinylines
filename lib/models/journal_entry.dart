@@ -16,14 +16,11 @@ class JournalEntry {
     this.imagePath,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   /// Creates a new entry with the current date
-  factory JournalEntry.create({
-    required String content,
-    String? imagePath,
-  }) {
+  factory JournalEntry.create({required String content, String? imagePath}) {
     final now = DateTime.now();
     final dateOnly = DateTime(now.year, now.month, now.day);
     return JournalEntry(
@@ -107,10 +104,8 @@ class JournalEntry {
       date: DateTime.tryParse((json['date'] as String?) ?? '') ?? now,
       content: (json['content'] as String?) ?? '',
       imagePath: json['imagePath'] as String?,
-      createdAt:
-          DateTime.tryParse((json['createdAt'] as String?) ?? '') ?? now,
-      updatedAt:
-          DateTime.tryParse((json['updatedAt'] as String?) ?? '') ?? now,
+      createdAt: DateTime.tryParse((json['createdAt'] as String?) ?? '') ?? now,
+      updatedAt: DateTime.tryParse((json['updatedAt'] as String?) ?? '') ?? now,
     );
   }
 

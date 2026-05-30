@@ -14,11 +14,7 @@ class EntryEditorScreen extends StatefulWidget {
   final JournalEntry? entry; // null for new entry
   final DateTime? date; // specified date for new entry
 
-  const EntryEditorScreen({
-    super.key,
-    this.entry,
-    this.date,
-  });
+  const EntryEditorScreen({super.key, this.entry, this.date});
 
   @override
   State<EntryEditorScreen> createState() => _EntryEditorScreenState();
@@ -38,7 +34,9 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
   @override
   void initState() {
     super.initState();
-    _contentController = TextEditingController(text: widget.entry?.content ?? '');
+    _contentController = TextEditingController(
+      text: widget.entry?.content ?? '',
+    );
     _existingImagePath = widget.entry?.imagePath;
     _contentController.addListener(_onContentChanged);
   }
@@ -113,7 +111,11 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
     if (widget.entry != null) {
       return widget.entry!.formattedDate;
     } else if (widget.date != null) {
-      final dateOnly = DateTime(widget.date!.year, widget.date!.month, widget.date!.day);
+      final dateOnly = DateTime(
+        widget.date!.year,
+        widget.date!.month,
+        widget.date!.day,
+      );
       final entry = JournalEntry.forDate(date: dateOnly, content: '');
       return entry.formattedDate;
     } else {
@@ -235,15 +237,9 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
           right: AppTheme.spacingS,
           child: Row(
             children: [
-              _buildImageButton(
-                icon: Icons.edit,
-                onTap: _pickImage,
-              ),
+              _buildImageButton(icon: Icons.edit, onTap: _pickImage),
               const SizedBox(width: AppTheme.spacingS),
-              _buildImageButton(
-                icon: Icons.delete,
-                onTap: _removeImage,
-              ),
+              _buildImageButton(icon: Icons.delete, onTap: _removeImage),
             ],
           ),
         ),
@@ -251,7 +247,10 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
     );
   }
 
-  Widget _buildImageButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildImageButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.6),
@@ -290,24 +289,24 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
         return Text(
           'Unsaved changes',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
+            color: AppTheme.textSecondary,
+            fontStyle: FontStyle.italic,
+          ),
         );
       case _SaveStatus.saving:
         return Text(
           'Saving...',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
         );
       case _SaveStatus.saved:
         return Text(
           'Saved ✓',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.successColor,
-                fontWeight: FontWeight.w600,
-              ),
+            color: AppTheme.successColor,
+            fontWeight: FontWeight.w600,
+          ),
         );
       case _SaveStatus.clean:
         return const SizedBox.shrink();
@@ -325,22 +324,22 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: const BoxDecoration(
         color: AppTheme.surfaceColor,
-        border: Border(
-          top: BorderSide(color: AppTheme.dividerColor),
-        ),
+        border: Border(top: BorderSide(color: AppTheme.dividerColor)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             '$wordCount words • $charCount characters',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
           ),
           if (_isNewEntry)
             ElevatedButton.icon(
-              onPressed: _contentController.text.isEmpty || _isSaving ? null : _saveEntry,
+              onPressed: _contentController.text.isEmpty || _isSaving
+                  ? null
+                  : _saveEntry,
               icon: _isSaving
                   ? const SizedBox(
                       width: 16,
@@ -498,7 +497,9 @@ class _EntryEditorScreenState extends State<EntryEditorScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Discard changes?'),
-        content: const Text('You have unsaved changes. Do you want to discard them?'),
+        content: const Text(
+          'You have unsaved changes. Do you want to discard them?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

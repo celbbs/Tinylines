@@ -24,7 +24,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
       _savedEntry = _entryController.text;
       _isEditing = false;
     });
-    
+
     // confirmation that journal entry saved
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -51,7 +51,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
   @override
   Widget build(BuildContext context) {
     String formattedDate = DateFormat('MM/dd/yyyy').format(DateTime.now());
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Today\'s Journal Entry'),
@@ -65,13 +65,10 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
             // show date
             Text(
               formattedDate,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            
+
             // entry text field
             TextField(
               controller: _entryController,
@@ -82,7 +79,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // save/cancel buttons
             Center(
               child: Row(
@@ -96,10 +93,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
                     ),
                     child: const Text(
                       'Save Entry',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ),
                   if (_isEditing) ...[
@@ -112,10 +106,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
                       ),
                       child: const Text(
                         'Cancel',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
                   ],
@@ -123,7 +114,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // show saved entry w edit button
             if (_savedEntry.isNotEmpty && !_isEditing)
               Expanded(
@@ -167,9 +158,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
                       ),
                       const SizedBox(height: 8),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Text(_savedEntry),
-                        ),
+                        child: SingleChildScrollView(child: Text(_savedEntry)),
                       ),
                     ],
                   ),

@@ -66,7 +66,10 @@ class StorageService {
           .toList();
 
       for (final file in jsonFiles) {
-        final id = file.path.split(Platform.pathSeparator).last.replaceAll('.json', '');
+        final id = file.path
+            .split(Platform.pathSeparator)
+            .last
+            .replaceAll('.json', '');
         final entry = await loadEntry(id);
         if (entry != null) {
           entries.add(entry);

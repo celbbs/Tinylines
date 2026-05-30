@@ -42,8 +42,8 @@ class JournalProvider with ChangeNotifier {
   JournalProvider({
     FirestoreService? firestoreService,
     StorageService? storageService,
-  })  : _firestoreServiceOverride = firestoreService,
-        _storageServiceOverride = storageService;
+  }) : _firestoreServiceOverride = firestoreService,
+       _storageServiceOverride = storageService;
 
   /// Initializes connectivity tracking lazily on first widget subscription,
   /// avoiding platform-channel errors in pure unit-test environments.
@@ -58,28 +58,26 @@ class JournalProvider with ChangeNotifier {
 
   void _initConnectivity() {
     try {
-      _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
-        (results) {
-          final offline = results.isEmpty ||
-              results.every((r) => r == ConnectivityResult.none);
-          if (_isOffline != offline) {
-            _isOffline = offline;
-            notifyListeners();
-          }
-        },
-        onError: (_) {},
-      );
-      Connectivity().checkConnectivity().then(
-        (results) {
-          final offline = results.isEmpty ||
-              results.every((r) => r == ConnectivityResult.none);
-          if (_isOffline != offline) {
-            _isOffline = offline;
-            notifyListeners();
-          }
-        },
-        onError: (_) {},
-      );
+      _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+        results,
+      ) {
+        final offline =
+            results.isEmpty ||
+            results.every((r) => r == ConnectivityResult.none);
+        if (_isOffline != offline) {
+          _isOffline = offline;
+          notifyListeners();
+        }
+      }, onError: (_) {});
+      Connectivity().checkConnectivity().then((results) {
+        final offline =
+            results.isEmpty ||
+            results.every((r) => r == ConnectivityResult.none);
+        if (_isOffline != offline) {
+          _isOffline = offline;
+          notifyListeners();
+        }
+      }, onError: (_) {});
     } catch (_) {
       // Platform channels unavailable in this environment
     }
@@ -143,20 +141,20 @@ class JournalProvider with ChangeNotifier {
   }
 
   int get currentStreak {
-  int streak = 0;
-  DateTime day = DateTime.now();
+    int streak = 0;
+    DateTime day = DateTime.now();
 
-  while (true) {
-    final normalized = DateTime(day.year, day.month, day.day);
-    if (hasEntryForDate(normalized)) {
-      streak++;
-      day = day.subtract(const Duration(days: 1));
-    } else {
-      break;
+    while (true) {
+      final normalized = DateTime(day.year, day.month, day.day);
+      if (hasEntryForDate(normalized)) {
+        streak++;
+        day = day.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
     }
+    return streak;
   }
-  return streak;
-}
 
   /// Adds or updates a journal entry.
   /// If [imageFile] is provided, saves it to local storage first and embeds
@@ -167,8 +165,7 @@ class JournalProvider with ChangeNotifier {
 
       // Save image to local disk first; embed the returned path into the entry
       if (imageFile != null) {
-        final imagePath =
-            await _storageService.saveImage(imageFile, entry.id);
+        final imagePath = await _storageService.saveImage(imageFile, entry.id);
         entryToSave = entry.copyWith(imagePath: imagePath);
       }
 
@@ -210,10 +207,7 @@ class JournalProvider with ChangeNotifier {
     String content, {
     File? imageFile,
   }) async {
-    final entry = JournalEntry.forDate(
-      date: date,
-      content: content,
-    );
+    final entry = JournalEntry.forDate(date: date, content: content);
     await saveEntry(entry, imageFile: imageFile);
   }
 

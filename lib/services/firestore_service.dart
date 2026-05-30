@@ -6,11 +6,9 @@ class FirestoreService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
-  FirestoreService({
-    FirebaseFirestore? firestore,
-    FirebaseAuth? auth,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  FirestoreService({FirebaseFirestore? firestore, FirebaseAuth? auth})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   User? get _currentUser => _auth.currentUser;
 
@@ -20,14 +18,13 @@ class FirestoreService {
       throw Exception('No authenticated user found.');
     }
 
-    return _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('entries');
+    return _firestore.collection('users').doc(user.uid).collection('entries');
   }
 
   Future<List<JournalEntry>> loadAllEntries() async {
-    final snapshot = await _entriesCollection.orderBy('date', descending: true).get();
+    final snapshot = await _entriesCollection
+        .orderBy('date', descending: true)
+        .get();
 
     return snapshot.docs
         .map((doc) => JournalEntry.fromJson(doc.data()))

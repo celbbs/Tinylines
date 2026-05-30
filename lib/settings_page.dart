@@ -55,8 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return user.email ?? '';
   }
 
-  String _key(String name) =>
-      context.read<SettingsProvider>().storageKey(name);
+  String _key(String name) => context.read<SettingsProvider>().storageKey(name);
 
   @override
   void initState() {
@@ -104,7 +103,9 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send reset email. Please try again.')),
+        const SnackBar(
+          content: Text('Failed to send reset email. Please try again.'),
+        ),
       );
     }
   }
@@ -137,9 +138,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final user = _currentUser;
     if (user == null) return;
 
-    final controller = TextEditingController(
-      text: user.displayName ?? '',
-    );
+    final controller = TextEditingController(text: user.displayName ?? '');
 
     await showDialog(
       context: context,
@@ -171,7 +170,10 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: s.secondaryTextColor)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: s.secondaryTextColor),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -191,7 +193,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (!mounted) return;
                 nav.pop();
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Failed to update name. Please try again.')),
+                  const SnackBar(
+                    content: Text('Failed to update name. Please try again.'),
+                  ),
                 );
               }
             },
@@ -231,7 +235,10 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: s.secondaryTextColor)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: s.secondaryTextColor),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -276,7 +283,10 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: s.secondaryTextColor)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: s.secondaryTextColor),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -321,7 +331,10 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: s.secondaryTextColor)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: s.secondaryTextColor),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -388,7 +401,9 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) Navigator.of(context).pop();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Something went wrong. Please try again.')),
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+        ),
       );
     }
   }
@@ -443,7 +458,9 @@ class _SettingsPageState extends State<SettingsPage> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: accentColors.map((c) => _buildColorOption(c, s)).toList(),
+                children: accentColors
+                    .map((c) => _buildColorOption(c, s))
+                    .toList(),
               ),
             ),
             const SizedBox(height: 20),
@@ -509,22 +526,19 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             const SizedBox(height: 16),
-            _buildToggleSetting(
-              'Reminders Enabled',
-              s.remindersEnabled,
-              s,
-              (value) async {
-                await s.setRemindersEnabled(value);
-                if (value) {
-                  await NotificationService.instance.scheduleDailyReminder(
-                    hour: s.dailyReminderTime.hour,
-                    minute: s.dailyReminderTime.minute,
-                  );
-                } else {
-                  await NotificationService.instance.cancelDailyReminder();
-                }
-              },
-            ),
+            _buildToggleSetting('Reminders Enabled', s.remindersEnabled, s, (
+              value,
+            ) async {
+              await s.setRemindersEnabled(value);
+              if (value) {
+                await NotificationService.instance.scheduleDailyReminder(
+                  hour: s.dailyReminderTime.hour,
+                  minute: s.dailyReminderTime.minute,
+                );
+              } else {
+                await NotificationService.instance.cancelDailyReminder();
+              }
+            }),
             const SizedBox(height: 32),
 
             // privacy section
@@ -592,8 +606,12 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 12),
 
             // shows display name — tap to edit
-            _buildNavigationSetting('Profile Name', _profileName, s,
-                onTap: _showEditNameDialog),
+            _buildNavigationSetting(
+              'Profile Name',
+              _profileName,
+              s,
+              onTap: _showEditNameDialog,
+            ),
             const SizedBox(height: 16),
 
             // shows email as read-only
@@ -623,25 +641,25 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildSectionHeader(String title, SettingsProvider s) => Text(
-        title,
-        style: TextStyle(
-          color: s.selectedAccentColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-          fontFamily: s.fontFamily,
-        ),
-      );
+    title,
+    style: TextStyle(
+      color: s.selectedAccentColor,
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+      fontFamily: s.fontFamily,
+    ),
+  );
 
   Widget _buildSettingLabel(String label, SettingsProvider s) => Text(
-        label,
-        style: TextStyle(
-          color: s.textColor,
-          fontSize: s.baseFontSize,
-          fontWeight: FontWeight.w500,
-          fontFamily: s.fontFamily,
-        ),
-      );
+    label,
+    style: TextStyle(
+      color: s.textColor,
+      fontSize: s.baseFontSize,
+      fontWeight: FontWeight.w500,
+      fontFamily: s.fontFamily,
+    ),
+  );
 
   Widget _buildThemeOption(String theme, IconData icon, SettingsProvider s) {
     final isSelected = s.selectedTheme == theme;
@@ -764,7 +782,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildTimeSetting(
-      String label, TimeOfDay time, SettingsProvider s, VoidCallback onTap) {
+    String label,
+    TimeOfDay time,
+    SettingsProvider s,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Row(
@@ -784,8 +806,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNavigationSetting(String label, String value, SettingsProvider s,
-      {VoidCallback? onTap}) {
+  Widget _buildNavigationSetting(
+    String label,
+    String value,
+    SettingsProvider s, {
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap ?? () {},
       child: Row(
@@ -816,8 +842,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildTappableSetting(String label, SettingsProvider s,
-      {required VoidCallback onTap}) {
+  Widget _buildTappableSetting(
+    String label,
+    SettingsProvider s, {
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Row(

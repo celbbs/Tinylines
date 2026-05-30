@@ -49,7 +49,9 @@ class SettingsProvider extends ChangeNotifier {
   Future<Map<String, dynamic>?> _loadFromFirestore() async {
     try {
       final snap = await _firestoreDoc?.get();
-      if (snap != null && snap.exists && snap.data() != null) return snap.data();
+      if (snap != null && snap.exists && snap.data() != null) {
+        return snap.data();
+      }
     } catch (_) {
       // Offline or missing security rules — fall back to local storage silently
     }
@@ -72,37 +74,61 @@ class SettingsProvider extends ChangeNotifier {
     final remote = await _loadFromFirestore();
     String? r(String key) => remote?[key]?.toString();
 
-    final theme            = r('theme')               ?? await _storage.read(key: storageKey('theme'));
-    final fontSize         = r('fontSize')            ?? await _storage.read(key: storageKey('fontSize'));
-    final fontStyle        = r('fontStyle')           ?? await _storage.read(key: storageKey('fontStyle'));
-    final dailyPrompt      = r('dailyPromptEnabled')  ?? await _storage.read(key: storageKey('dailyPromptEnabled'));
-    final autoSave         = r('autoSaveInterval')    ?? await _storage.read(key: storageKey('autoSaveInterval'));
-    final remindersVal     = r('remindersEnabled')    ?? await _storage.read(key: storageKey('remindersEnabled'));
-    final hidePreviewsVal  = r('hidePreviewsEnabled') ?? await _storage.read(key: storageKey('hidePreviewsEnabled'));
-    final reminderHour     = r('reminderHour')        ?? await _storage.read(key: storageKey('reminderHour'));
-    final reminderMinute   = r('reminderMinute')      ?? await _storage.read(key: storageKey('reminderMinute'));
-    final accentColorValue = r('accentColor')         ?? await _storage.read(key: storageKey('accentColor'));
+    final theme = r('theme') ?? await _storage.read(key: storageKey('theme'));
+    final fontSize =
+        r('fontSize') ?? await _storage.read(key: storageKey('fontSize'));
+    final fontStyle =
+        r('fontStyle') ?? await _storage.read(key: storageKey('fontStyle'));
+    final dailyPrompt =
+        r('dailyPromptEnabled') ??
+        await _storage.read(key: storageKey('dailyPromptEnabled'));
+    final autoSave =
+        r('autoSaveInterval') ??
+        await _storage.read(key: storageKey('autoSaveInterval'));
+    final remindersVal =
+        r('remindersEnabled') ??
+        await _storage.read(key: storageKey('remindersEnabled'));
+    final hidePreviewsVal =
+        r('hidePreviewsEnabled') ??
+        await _storage.read(key: storageKey('hidePreviewsEnabled'));
+    final reminderHour =
+        r('reminderHour') ??
+        await _storage.read(key: storageKey('reminderHour'));
+    final reminderMinute =
+        r('reminderMinute') ??
+        await _storage.read(key: storageKey('reminderMinute'));
+    final accentColorValue =
+        r('accentColor') ?? await _storage.read(key: storageKey('accentColor'));
 
-    selectedTheme       = theme     ?? defaultTheme;
-    selectedFontSize    = fontSize  ?? defaultFontSize;
-    selectedFontStyle   = fontStyle ?? defaultFontStyle;
-    dailyPromptEnabled  = dailyPrompt   == null ? defaultDailyPrompt       : dailyPrompt   == 'true';
+    selectedTheme = theme ?? defaultTheme;
+    selectedFontSize = fontSize ?? defaultFontSize;
+    selectedFontStyle = fontStyle ?? defaultFontStyle;
+    dailyPromptEnabled = dailyPrompt == null
+        ? defaultDailyPrompt
+        : dailyPrompt == 'true';
     const validAutoSave = ['1 second', '5 seconds', '10 seconds'];
-    final rawAutoSave   = autoSave ?? defaultAutoSave;
-    autoSaveInterval    = validAutoSave.contains(rawAutoSave) ? rawAutoSave : defaultAutoSave;
-    remindersEnabled    = remindersVal  == null ? defaultRemindersEnabled   : remindersVal  == 'true';
-    hidePreviewsEnabled = hidePreviewsVal == null ? defaultHidePreviews     : hidePreviewsVal == 'true';
+    final rawAutoSave = autoSave ?? defaultAutoSave;
+    autoSaveInterval = validAutoSave.contains(rawAutoSave)
+        ? rawAutoSave
+        : defaultAutoSave;
+    remindersEnabled = remindersVal == null
+        ? defaultRemindersEnabled
+        : remindersVal == 'true';
+    hidePreviewsEnabled = hidePreviewsVal == null
+        ? defaultHidePreviews
+        : hidePreviewsVal == 'true';
 
     if (reminderHour != null && reminderMinute != null) {
       dailyReminderTime = TimeOfDay(
-        hour:   int.tryParse(reminderHour)   ?? defaultReminderTime.hour,
+        hour: int.tryParse(reminderHour) ?? defaultReminderTime.hour,
         minute: int.tryParse(reminderMinute) ?? defaultReminderTime.minute,
       );
     }
 
     if (accentColorValue != null) {
-      selectedAccentColor =
-          Color(int.tryParse(accentColorValue) ?? defaultAccentColor.toARGB32());
+      selectedAccentColor = Color(
+        int.tryParse(accentColorValue) ?? defaultAccentColor.toARGB32(),
+      );
     }
 
     notifyListeners();
@@ -170,40 +196,40 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> resetToDefaults() async {
-    selectedTheme       = defaultTheme;
+    selectedTheme = defaultTheme;
     selectedAccentColor = defaultAccentColor;
-    selectedFontSize    = defaultFontSize;
-    selectedFontStyle   = defaultFontStyle;
-    dailyPromptEnabled  = defaultDailyPrompt;
-    autoSaveInterval    = defaultAutoSave;
-    dailyReminderTime   = defaultReminderTime;
-    remindersEnabled    = defaultRemindersEnabled;
+    selectedFontSize = defaultFontSize;
+    selectedFontStyle = defaultFontStyle;
+    dailyPromptEnabled = defaultDailyPrompt;
+    autoSaveInterval = defaultAutoSave;
+    dailyReminderTime = defaultReminderTime;
+    remindersEnabled = defaultRemindersEnabled;
     hidePreviewsEnabled = defaultHidePreviews;
     notifyListeners();
 
-    await _save('theme',               selectedTheme);
-    await _save('accentColor',         selectedAccentColor.toARGB32().toString());
-    await _save('fontSize',            selectedFontSize);
-    await _save('fontStyle',           selectedFontStyle);
-    await _save('dailyPromptEnabled',  dailyPromptEnabled.toString());
-    await _save('autoSaveInterval',    autoSaveInterval);
-    await _save('remindersEnabled',    remindersEnabled.toString());
+    await _save('theme', selectedTheme);
+    await _save('accentColor', selectedAccentColor.toARGB32().toString());
+    await _save('fontSize', selectedFontSize);
+    await _save('fontStyle', selectedFontStyle);
+    await _save('dailyPromptEnabled', dailyPromptEnabled.toString());
+    await _save('autoSaveInterval', autoSaveInterval);
+    await _save('remindersEnabled', remindersEnabled.toString());
     await _save('hidePreviewsEnabled', hidePreviewsEnabled.toString());
-    await _save('reminderHour',        dailyReminderTime.hour.toString());
-    await _save('reminderMinute',      dailyReminderTime.minute.toString());
+    await _save('reminderHour', dailyReminderTime.hour.toString());
+    await _save('reminderMinute', dailyReminderTime.minute.toString());
   }
 
   /// Call on sign-out so app reverts to defaults until the next user loads
   void resetForSignOut() {
-    _uid                = null;
-    selectedTheme       = defaultTheme;
+    _uid = null;
+    selectedTheme = defaultTheme;
     selectedAccentColor = defaultAccentColor;
-    selectedFontSize    = defaultFontSize;
-    selectedFontStyle   = defaultFontStyle;
-    dailyPromptEnabled  = defaultDailyPrompt;
-    autoSaveInterval    = defaultAutoSave;
-    dailyReminderTime   = defaultReminderTime;
-    remindersEnabled    = defaultRemindersEnabled;
+    selectedFontSize = defaultFontSize;
+    selectedFontStyle = defaultFontStyle;
+    dailyPromptEnabled = defaultDailyPrompt;
+    autoSaveInterval = defaultAutoSave;
+    dailyReminderTime = defaultReminderTime;
+    remindersEnabled = defaultRemindersEnabled;
     hidePreviewsEnabled = defaultHidePreviews;
     notifyListeners();
   }
@@ -211,49 +237,67 @@ class SettingsProvider extends ChangeNotifier {
   // derived display values
   double get baseFontSize {
     switch (selectedFontSize) {
-      case 'Small': return 13.0;
-      case 'Large': return 18.0;
-      default:      return 15.0;
+      case 'Small':
+        return 13.0;
+      case 'Large':
+        return 18.0;
+      default:
+        return 15.0;
     }
   }
 
   String? get fontFamily {
     switch (selectedFontStyle) {
-      case 'Serif':       return GoogleFonts.merriweather().fontFamily;
-      case 'Handwriting': return GoogleFonts.caveat().fontFamily;
-      default:            return null; // null = system sans-serif
+      case 'Serif':
+        return GoogleFonts.merriweather().fontFamily;
+      case 'Handwriting':
+        return GoogleFonts.caveat().fontFamily;
+      default:
+        return null; // null = system sans-serif
     }
   }
 
   Color get backgroundColor {
     switch (selectedTheme) {
-      case 'Dark':   return const Color(0xFF1a1a1a);
-      case 'Pastel': return const Color(0xFFFFF5F7);
-      default:       return Colors.white;
+      case 'Dark':
+        return const Color(0xFF1a1a1a);
+      case 'Pastel':
+        return const Color(0xFFFFF5F7);
+      default:
+        return Colors.white;
     }
   }
 
   Color get textColor {
     switch (selectedTheme) {
-      case 'Dark':   return Colors.white;
-      case 'Pastel': return const Color(0xFF5a4a5a);
-      default:       return Colors.black87;
+      case 'Dark':
+        return Colors.white;
+      case 'Pastel':
+        return const Color(0xFF5a4a5a);
+      default:
+        return Colors.black87;
     }
   }
 
   Color get secondaryTextColor {
     switch (selectedTheme) {
-      case 'Dark':   return Colors.white70;
-      case 'Pastel': return const Color(0xFF8a7a8a);
-      default:       return Colors.black54;
+      case 'Dark':
+        return Colors.white70;
+      case 'Pastel':
+        return const Color(0xFF8a7a8a);
+      default:
+        return Colors.black54;
     }
   }
 
   Color get cardColor {
     switch (selectedTheme) {
-      case 'Dark':   return const Color(0xFF2a2a2a);
-      case 'Pastel': return const Color(0xFFffe4eb);
-      default:       return Colors.grey.shade100;
+      case 'Dark':
+        return const Color(0xFF2a2a2a);
+      case 'Pastel':
+        return const Color(0xFFffe4eb);
+      default:
+        return Colors.grey.shade100;
     }
   }
 
@@ -269,21 +313,21 @@ class SettingsProvider extends ChangeNotifier {
 
     final tt = base.textTheme;
     final textTheme = tt.copyWith(
-      displayLarge:   styled(tt.displayLarge!),
-      displayMedium:  styled(tt.displayMedium!),
-      displaySmall:   styled(tt.displaySmall!),
-      headlineLarge:  styled(tt.headlineLarge!),
+      displayLarge: styled(tt.displayLarge!),
+      displayMedium: styled(tt.displayMedium!),
+      displaySmall: styled(tt.displaySmall!),
+      headlineLarge: styled(tt.headlineLarge!),
       headlineMedium: styled(tt.headlineMedium!),
-      headlineSmall:  styled(tt.headlineSmall!),
-      titleLarge:     styled(tt.titleLarge!),
-      titleMedium:    styled(tt.titleMedium!),
-      titleSmall:     styled(tt.titleSmall!),
-      bodyLarge:      styled(tt.bodyLarge!).copyWith(fontSize: baseFontSize + 1),
-      bodyMedium:     styled(tt.bodyMedium!).copyWith(fontSize: baseFontSize),
-      bodySmall:      styled(tt.bodySmall!).copyWith(fontSize: baseFontSize - 1),
-      labelLarge:     styled(tt.labelLarge!),
-      labelMedium:    styled(tt.labelMedium!),
-      labelSmall:     styled(tt.labelSmall!),
+      headlineSmall: styled(tt.headlineSmall!),
+      titleLarge: styled(tt.titleLarge!),
+      titleMedium: styled(tt.titleMedium!),
+      titleSmall: styled(tt.titleSmall!),
+      bodyLarge: styled(tt.bodyLarge!).copyWith(fontSize: baseFontSize + 1),
+      bodyMedium: styled(tt.bodyMedium!).copyWith(fontSize: baseFontSize),
+      bodySmall: styled(tt.bodySmall!).copyWith(fontSize: baseFontSize - 1),
+      labelLarge: styled(tt.labelLarge!),
+      labelMedium: styled(tt.labelMedium!),
+      labelSmall: styled(tt.labelSmall!),
     );
 
     return base.copyWith(

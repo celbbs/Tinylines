@@ -111,7 +111,10 @@ class _PasscodePageState extends State<PasscodePage> {
       case _Step.confirm:
         if (_currentInput == _firstEntry) {
           try {
-            await _storage.write(key: widget.pinStorageKey, value: _currentInput);
+            await _storage.write(
+              key: widget.pinStorageKey,
+              value: _currentInput,
+            );
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -190,7 +193,9 @@ class _PasscodePageState extends State<PasscodePage> {
                   shape: BoxShape.circle,
                   color: filled ? widget.accentColor : Colors.transparent,
                   border: Border.all(
-                    color: filled ? widget.accentColor : widget.secondaryTextColor,
+                    color: filled
+                        ? widget.accentColor
+                        : widget.secondaryTextColor,
                     width: 2,
                   ),
                 ),
