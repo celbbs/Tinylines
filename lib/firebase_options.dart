@@ -84,5 +84,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'tinylines-5265e.firebasestorage.app',
     measurementId: 'G-MHKXSG11R0',
   );
-
 }

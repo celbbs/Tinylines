@@ -173,10 +173,7 @@ class AppTheme {
             horizontal: spacingM,
             vertical: spacingS,
           ),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -204,17 +201,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusM),
           borderSide: const BorderSide(color: errorColor),
         ),
-        hintStyle: const TextStyle(
-          color: textHint,
-          fontSize: 14,
-        ),
+        hintStyle: const TextStyle(color: textHint, fontSize: 14),
       ),
 
       // Icon theme
-      iconTheme: const IconThemeData(
-        color: textPrimary,
-        size: 24,
-      ),
+      iconTheme: const IconThemeData(color: textPrimary, size: 24),
 
       // Floating action button theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(

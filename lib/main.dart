@@ -16,9 +16,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize notifications
   await NotificationService.instance.init();
@@ -74,7 +72,8 @@ class _AuthGateState extends State<AuthGate> {
   void _triggerSignedInLoad(BuildContext context, User user) {
     if (_lastUserId != user.uid) {
       _lastUserId = user.uid;
-      _passcodeUnlocked = false; // require PIN to be entered again for a new user session
+      _passcodeUnlocked =
+          false; // require PIN to be entered again for a new user session
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final journalProvider = context.read<JournalProvider>();
@@ -110,9 +109,7 @@ class _AuthGateState extends State<AuthGate> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -134,9 +131,7 @@ class _AuthGateState extends State<AuthGate> {
           builder: (context, loadSnapshot) {
             if (loadSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
+                body: Center(child: CircularProgressIndicator()),
               );
             }
 
@@ -160,7 +155,8 @@ class _AuthGateState extends State<AuthGate> {
                 _loadPin(user.uid),
               ]).then((results) => (results[0] as bool, results[1] as String?)),
               builder: (context, startupSnapshot) {
-                if (startupSnapshot.connectionState == ConnectionState.waiting) {
+                if (startupSnapshot.connectionState ==
+                    ConnectionState.waiting) {
                   return const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   );
@@ -185,13 +181,11 @@ class _AuthGateState extends State<AuthGate> {
                 }
 
                 // If a PIN is set and the user hasn't unlocked this session then show the lock screen
-                final pinIsSet =
-                    storedPin != null && storedPin.isNotEmpty;
+                final pinIsSet = storedPin != null && storedPin.isNotEmpty;
                 if (pinIsSet && !_passcodeUnlocked) {
                   return _PasscodeLockScreen(
                     correctPin: storedPin,
-                    onUnlocked: () =>
-                        setState(() => _passcodeUnlocked = true),
+                    onUnlocked: () => setState(() => _passcodeUnlocked = true),
                   );
                 }
 

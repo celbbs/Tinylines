@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tinylines/main.dart';
 
 void main() {
-  testWidgets('TinyLinesApp widget can be instantiated', (WidgetTester tester) async {
+  testWidgets('TinyLinesApp widget can be instantiated', (
+    WidgetTester tester,
+  ) async {
     // Verify the app widget itself can be constructed without errors.
     // Full integration tests (auth, Firestore) require a Firebase test environment.
     expect(const TinyLinesApp(), isA<TinyLinesApp>());

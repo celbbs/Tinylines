@@ -15,14 +15,14 @@ class OnThisDayScreen extends StatelessWidget {
     final now = DateTime.now();
 
     // filter same month/day (any year)
-    final entries = provider.entries.where(
-      (entry) => entry.date.month == now.month && entry.date.day == now.day,
-    ).toList();
+    final entries = provider.entries
+        .where(
+          (entry) => entry.date.month == now.month && entry.date.day == now.day,
+        )
+        .toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('On This Day'),
-      ),
+      appBar: AppBar(title: const Text('On This Day')),
       body: entries.isEmpty
           ? _buildEmptyState()
           : ListView.builder(
@@ -51,18 +51,12 @@ class OnThisDayScreen extends StatelessWidget {
             const SizedBox(height: AppTheme.spacingM),
             const Text(
               'No entries for this day',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppTheme.textSecondary,
-              ),
+              style: TextStyle(fontSize: 18, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: AppTheme.spacingS),
             const Text(
               'Check back later or add a new entry today!',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -72,7 +66,8 @@ class OnThisDayScreen extends StatelessWidget {
   }
 
   Widget _buildEntryCard(BuildContext context, JournalEntry entry) {
-    final hasUsableImage = entry.imagePath != null &&
+    final hasUsableImage =
+        entry.imagePath != null &&
         entry.imagePath!.isNotEmpty &&
         File(entry.imagePath!).existsSync();
 
@@ -87,9 +82,7 @@ class OnThisDayScreen extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => EntryEditorScreen(entry: entry),
-            ),
+            MaterialPageRoute(builder: (_) => EntryEditorScreen(entry: entry)),
           );
         },
         child: Padding(

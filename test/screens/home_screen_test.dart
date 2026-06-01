@@ -6,7 +6,34 @@ import 'package:tinylines/providers/journal_provider.dart';
 import 'package:tinylines/providers/settings_provider.dart';
 import 'package:tinylines/screens/home_screen.dart';
 import 'package:tinylines/screens/entry_editor_screen.dart';
+import 'package:tinylines/services/auth_service.dart';
 import 'package:tinylines/utils/app_theme.dart';
+
+class FakeAuthService implements AuthService {
+  final String? name;
+  FakeAuthService({this.name = 'Tester'});
+
+  @override
+  String? get currentUserName => name;
+
+  @override
+  bool get isSignedIn => true;
+
+  @override
+  Future<void> signIn({
+    required String email,
+    required String password,
+  }) async {}
+
+  @override
+  Future<void> createAccount({
+    required String email,
+    required String password,
+  }) async {}
+
+  @override
+  Future<void> signOut() async {}
+}
 
 /// A fake JournalProvider that lets tests control state without file I/O.
 class FakeJournalProvider extends JournalProvider {
@@ -30,9 +57,7 @@ class FakeJournalProvider extends JournalProvider {
   JournalEntry? getEntryForDate(DateTime date) {
     final dateOnly = DateTime(date.year, date.month, date.day);
     try {
-      return fakeEntries.firstWhere(
-        (e) => e.date.isAtSameMomentAs(dateOnly),
-      );
+      return fakeEntries.firstWhere((e) => e.date.isAtSameMomentAs(dateOnly));
     } catch (_) {
       return null;
     }
@@ -52,15 +77,17 @@ class FakeJournalProvider extends JournalProvider {
 }
 
 /// Wraps HomeScreen in the minimal widget tree needed for testing.
-Widget buildTestApp(JournalProvider provider) {
+Widget buildTestApp(JournalProvider provider, {AuthService? authService}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<JournalProvider>.value(value: provider),
-      ChangeNotifierProvider<SettingsProvider>(create: (_) => SettingsProvider()),
+      ChangeNotifierProvider<SettingsProvider>(
+        create: (_) => SettingsProvider(),
+      ),
     ],
     child: MaterialApp(
       theme: AppTheme.lightTheme,
-      home: const HomeScreen(),
+      home: HomeScreen(authService: authService ?? FakeAuthService()),
     ),
   );
 }
@@ -78,8 +105,9 @@ JournalEntry makeEntry(String id, DateTime date, String content) {
 void main() {
   group('HomeScreen', () {
     group('empty state', () {
-      testWidgets('shows "Start your first entry" when there are no entries',
-          (tester) async {
+      testWidgets('shows "Start your first entry" when there are no entries', (
+        tester,
+      ) async {
         final provider = FakeJournalProvider(fakeEntries: []);
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
@@ -87,16 +115,12 @@ void main() {
         expect(find.text('Start your first entry'), findsOneWidget);
       });
 
-      testWidgets('shows hint text to tap + when no entries',
-          (tester) async {
+      testWidgets('shows hint text to tap + when no entries', (tester) async {
         final provider = FakeJournalProvider(fakeEntries: []);
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
-        expect(
-          find.text('Tap + to write something — even one line counts.'),
-          findsOneWidget,
-        );
+        expect(find.text('Tap + to add something'), findsOneWidget);
       });
 
       testWidgets('shows FAB add button', (tester) async {
@@ -109,11 +133,14 @@ void main() {
     });
 
     group('recent entries list', () {
-      testWidgets('shows "Recent Entries" heading when entries exist',
-          (tester) async {
-        final provider = FakeJournalProvider(fakeEntries: [
-          makeEntry('2025-06-15', DateTime(2025, 6, 15), 'Hello world'),
-        ]);
+      testWidgets('shows "Recent Entries" heading when entries exist', (
+        tester,
+      ) async {
+        final provider = FakeJournalProvider(
+          fakeEntries: [
+            makeEntry('2025-06-15', DateTime(2025, 6, 15), 'Hello world'),
+          ],
+        );
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
@@ -121,10 +148,11 @@ void main() {
       });
 
       testWidgets('shows entry content in card', (tester) async {
-        final provider = FakeJournalProvider(fakeEntries: [
-          makeEntry(
-              '2025-06-15', DateTime(2025, 6, 15), 'My journal entry'),
-        ]);
+        final provider = FakeJournalProvider(
+          fakeEntries: [
+            makeEntry('2025-06-15', DateTime(2025, 6, 15), 'My journal entry'),
+          ],
+        );
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
@@ -140,8 +168,9 @@ void main() {
             'Entry $i',
           ),
         );
-        final provider =
-            FakeJournalProvider(fakeEntries: entries.take(5).toList());
+        final provider = FakeJournalProvider(
+          fakeEntries: entries.take(5).toList(),
+        );
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
@@ -149,12 +178,15 @@ void main() {
         expect(find.textContaining('Entry'), findsNWidgets(5));
       });
 
-      testWidgets('tapping an entry card navigates to EntryEditorScreen',
-          (tester) async {
+      testWidgets('tapping an entry card navigates to EntryEditorScreen', (
+        tester,
+      ) async {
         final entry = makeEntry(
-            '2025-06-15', DateTime(2025, 6, 15), 'Tappable entry');
-        final provider =
-            FakeJournalProvider(fakeEntries: [entry]);
+          '2025-06-15',
+          DateTime(2025, 6, 15),
+          'Tappable entry',
+        );
+        final provider = FakeJournalProvider(fakeEntries: [entry]);
         await tester.pumpWidget(buildTestApp(provider));
         await tester.pumpAndSettle();
 
@@ -169,40 +201,41 @@ void main() {
 
     group('FAB behavior', () {
       testWidgets(
-          'tapping FAB navigates to EntryEditorScreen when no entry exists for today',
-          (tester) async {
-        // No entries at all → FAB should open a new editor
-        final provider = FakeJournalProvider(fakeEntries: []);
-        await tester.pumpWidget(buildTestApp(provider));
-        await tester.pumpAndSettle();
+        'tapping FAB navigates to EntryEditorScreen when no entry exists for today',
+        (tester) async {
+          // No entries at all → FAB should open a new editor
+          final provider = FakeJournalProvider(fakeEntries: []);
+          await tester.pumpWidget(buildTestApp(provider));
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(FloatingActionButton));
-        await tester.pumpAndSettle();
+          await tester.tap(find.byType(FloatingActionButton));
+          await tester.pumpAndSettle();
 
-        expect(find.byType(EntryEditorScreen), findsOneWidget);
-      });
+          expect(find.byType(EntryEditorScreen), findsOneWidget);
+        },
+      );
 
       testWidgets(
-          'tapping FAB opens existing entry when today\'s entry already exists',
-          (tester) async {
-        final today = DateTime.now();
-        final todayEntry = makeEntry(
-          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}',
-          DateTime(today.year, today.month, today.day),
-          'Already written today',
-        );
-        final provider =
-            FakeJournalProvider(fakeEntries: [todayEntry]);
-        await tester.pumpWidget(buildTestApp(provider));
-        await tester.pumpAndSettle();
+        'tapping FAB opens existing entry when today\'s entry already exists',
+        (tester) async {
+          final today = DateTime.now();
+          final todayEntry = makeEntry(
+            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}',
+            DateTime(today.year, today.month, today.day),
+            'Already written today',
+          );
+          final provider = FakeJournalProvider(fakeEntries: [todayEntry]);
+          await tester.pumpWidget(buildTestApp(provider));
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(FloatingActionButton));
-        await tester.pumpAndSettle();
+          await tester.tap(find.byType(FloatingActionButton));
+          await tester.pumpAndSettle();
 
-        // Should open EntryEditorScreen in edit mode (showing existing content)
-        expect(find.byType(EntryEditorScreen), findsOneWidget);
-        expect(find.text('Already written today'), findsOneWidget);
-      });
+          // Should open EntryEditorScreen in edit mode (showing existing content)
+          expect(find.byType(EntryEditorScreen), findsOneWidget);
+          expect(find.text('Already written today'), findsOneWidget);
+        },
+      );
     });
 
     group('AppBar', () {
@@ -212,6 +245,20 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('TinyLines'), findsOneWidget);
+      });
+    });
+
+    group('greeting', () {
+      testWidgets('shows personalized greeting with injected user name', (
+        tester,
+      ) async {
+        final provider = FakeJournalProvider(fakeEntries: []);
+        await tester.pumpWidget(
+          buildTestApp(provider, authService: FakeAuthService(name: 'Ada')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Ada'), findsOneWidget);
       });
     });
   });

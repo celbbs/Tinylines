@@ -29,7 +29,8 @@ class _TutorialPageState extends State<TutorialPage> {
     },
     {
       'title': 'Add an Entry',
-      'subtitle': 'Tap any day on the calendar to write about it, past or present.',
+      'subtitle':
+          'Tap any day on the calendar to write about it, past or present.',
       'image': 'assets/tutorial2.png',
     },
     {
@@ -93,10 +94,7 @@ class _TutorialPageState extends State<TutorialPage> {
       decoration: BoxDecoration(
         color: AppTheme.backgroundColor,
         border: Border(
-          top: BorderSide(
-            color: AppTheme.dividerColor,
-            width: 0.5,
-          ),
+          top: BorderSide(color: AppTheme.dividerColor, width: 0.5),
         ),
       ),
       child: isLastPage
@@ -112,17 +110,13 @@ class _TutorialPageState extends State<TutorialPage> {
                   }
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const HomeScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(
-                    vertical: AppTheme.spacingM,
-                  ),
+                  padding: EdgeInsets.symmetric(vertical: AppTheme.spacingM),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.radiusM),
                   ),

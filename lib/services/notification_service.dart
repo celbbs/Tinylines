@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -13,7 +12,9 @@ class NotificationService {
 
   Future<void> init() async {
     // android
-    final androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     // apple setup
     final darwinSettings = DarwinInitializationSettings(
@@ -22,7 +23,7 @@ class NotificationService {
       requestSoundPermission: true,
     );
 
-    // both 
+    // both
     final settings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
@@ -67,37 +68,38 @@ class NotificationService {
       platformDetails,
     );
   }
+
   // schedule a daily reminder at a specific time
-Future<void> scheduleDailyReminder({int hour = 20, int minute = 0}) async {
-  const androidDetails = AndroidNotificationDetails(
-    'daily_reminder',
-    'Daily Journal Reminder',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+  Future<void> scheduleDailyReminder({int hour = 20, int minute = 0}) async {
+    const androidDetails = AndroidNotificationDetails(
+      'daily_reminder',
+      'Daily Journal Reminder',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
 
-  const darwinDetails = DarwinNotificationDetails();
+    const darwinDetails = DarwinNotificationDetails();
 
-  const platformDetails = NotificationDetails(
-    android: androidDetails,
-    iOS: darwinDetails,
-    macOS: darwinDetails,
-  );
+    const platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+      macOS: darwinDetails,
+    );
 
-  await flutterLocalNotificationsPlugin.periodicallyShow(
-    0, // notification ID
-    'Time to journal ✏️',
-    'Take a moment to write your daily entry.',
-    RepeatInterval.daily,
-    platformDetails,
-    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-  );
-}
+    await flutterLocalNotificationsPlugin.periodicallyShow(
+      0, // notification ID
+      'Time to journal ✏️',
+      'Take a moment to write your daily entry.',
+      RepeatInterval.daily,
+      platformDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
 
-// Cancel the daily reminder
-Future<void> cancelDailyReminder() async {
-  await flutterLocalNotificationsPlugin.cancel(0);
-}
+  // Cancel the daily reminder
+  Future<void> cancelDailyReminder() async {
+    await flutterLocalNotificationsPlugin.cancel(0);
+  }
 
   Future<String?> getDeviceToken() async {
     if (!kIsWeb && !Platform.isMacOS) {

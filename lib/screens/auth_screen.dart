@@ -60,10 +60,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       } else {
         final credential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+            .createUserWithEmailAndPassword(email: email, password: password);
         await credential.user?.updateDisplayName(name);
       }
     } on FirebaseAuthException catch (e) {
@@ -84,9 +81,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TinyLines'),
-      ),
+      appBar: AppBar(title: const Text('TinyLines')),
       body: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingL),
         child: Column(
@@ -106,9 +101,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 keyboardType: TextInputType.name,
                 autocorrect: false,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                ),
+                decoration: const InputDecoration(labelText: 'Name'),
               ),
               const SizedBox(height: AppTheme.spacingM),
             ],
@@ -119,9 +112,7 @@ class _AuthScreenState extends State<AuthScreen> {
               keyboardType: TextInputType.emailAddress,
               autocorrect: false,
               enableSuggestions: false,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-              ),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
             const SizedBox(height: AppTheme.spacingM),
 
@@ -169,9 +160,9 @@ class _AuthScreenState extends State<AuthScreen> {
               onPressed: _loading
                   ? null
                   : () => setState(() {
-                        _isSignIn = !_isSignIn;
-                        _error = null;
-                      }),
+                      _isSignIn = !_isSignIn;
+                      _error = null;
+                    }),
               child: Text(
                 _isSignIn
                     ? 'Need an account? Sign up'
