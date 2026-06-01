@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'providers/settings_provider.dart';
 import 'tutorial_page.dart';
 import 'passcode_page.dart';
-import 'screens/auth_screen.dart';
 import '../services/notification_service.dart';
 import 'package:tinylines/utils/tutorial_helper.dart';
 
@@ -74,10 +73,12 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AuthScreen()),
-        (route) => false,
-      );
+
+      // Return to the root route so AuthGate can rebuild from authStateChanges.
+      Navigator.of(
+        context,
+        rootNavigator: true,
+      ).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -140,78 +141,84 @@ class _SettingsPageState extends State<SettingsPage> {
 
     final controller = TextEditingController(text: user.displayName ?? '');
 
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: s.cardColor,
-        title: Text(
-          'Edit Profile Name',
-          style: TextStyle(color: s.textColor, fontFamily: s.fontFamily),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: TextStyle(
-            color: s.textColor,
-            fontSize: s.baseFontSize,
-            fontFamily: s.fontFamily,
+    try {
+      final newName = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: s.cardColor,
+          title: Text(
+            'Edit Profile Name',
+            style: TextStyle(color: s.textColor, fontFamily: s.fontFamily),
           ),
-          decoration: InputDecoration(
-            hintText: 'Enter your name',
-            hintStyle: TextStyle(color: s.secondaryTextColor),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: s.secondaryTextColor),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: TextStyle(
+              color: s.textColor,
+              fontSize: s.baseFontSize,
+              fontFamily: s.fontFamily,
             ),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: s.selectedAccentColor),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: s.secondaryTextColor),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newName = controller.text.trim();
-              if (newName.isEmpty) return;
-              final nav = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
-              try {
-                await user.updateDisplayName(newName);
-                if (!mounted) return;
-                setState(() {}); // refresh _profileName getter
-                nav.pop();
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Profile name updated.')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                nav.pop();
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Failed to update name. Please try again.'),
-                  ),
-                );
-              }
-            },
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: s.selectedAccentColor,
-                fontWeight: FontWeight.bold,
+            decoration: InputDecoration(
+              hintText: 'Enter your name',
+              hintStyle: TextStyle(color: s.secondaryTextColor),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: s.secondaryTextColor),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: s.selectedAccentColor),
               ),
             ),
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: s.secondaryTextColor),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final typedName = controller.text.trim();
+                if (typedName.isEmpty) return;
+                Navigator.pop(dialogContext, typedName);
+              },
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  color: s.selectedAccentColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 
-    controller.dispose();
+      if (newName == null || newName.trim().isEmpty) return;
+
+      try {
+        await user.updateDisplayName(newName.trim());
+
+        if (!mounted) return;
+
+        setState(() {}); // refresh _profileName getter
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profile name updated.')));
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update name. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      controller.dispose();
+    }
   }
 
   Future<void> _removePasscode() async {
@@ -357,7 +364,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
     final uid = user.uid;
 
-    if (!mounted) return;
+    final nav = Navigator.of(context, rootNavigator: true);
+    final messenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -365,26 +374,39 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     try {
-      // delete firestore document first
+      // Delete Firestore user document first.
+      // If this fails, still continue with account deletion.
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .delete()
           .onError((_, __) => null);
 
-      // wipe local storage
+      // Wipe local secure storage for this app.
       await _storage.deleteAll();
 
-      // delete firebase auth account — triggers authgate to navigate to auth screen
+      // Delete the Firebase Auth account.
       await user.delete();
 
-      if (mounted) Navigator.of(context).pop();
+      // Force local auth/session cleanup.
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      // Close the loading dialog.
+      nav.pop();
+
+      // Return to the root AuthGate so it can show AuthScreen.
+      nav.popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        nav.pop();
+      }
+
       if (!mounted) return;
 
       if (e.code == 'requires-recent-login') {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text(
               'For security, please sign out and sign back in before deleting your account.',
@@ -393,14 +415,18 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text('Could not delete account: ${e.message}')),
         );
       }
     } catch (e) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        nav.pop();
+      }
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Something went wrong. Please try again.'),
         ),
@@ -592,7 +618,10 @@ class _SettingsPageState extends State<SettingsPage> {
               s,
               onTap: () async {
                 final nav = Navigator.of(context);
-                await TutorialHelper.setTutorialSeen(false);
+                final uid = FirebaseAuth.instance.currentUser?.uid;
+                if (uid != null) {
+                  await TutorialHelper.setTutorialSeen(uid, false);
+                }
                 if (!mounted) return;
                 nav.pushReplacement(
                   MaterialPageRoute(builder: (_) => const TutorialPage()),

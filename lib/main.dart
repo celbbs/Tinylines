@@ -59,6 +59,11 @@ class _AuthGateState extends State<AuthGate> {
   String? _lastUserId;
   Future<void>? _loadFuture = Future.value();
 
+  // Caches the account verification check so a deleted Firebase user
+  // gets signed out locally instead of being sent back into HomeScreen.
+  String? _verifiedUserId;
+  Future<bool>? _verifyUserFuture;
+
   // Tracks whether the user has passed the PIN lock screen during this session
   // Resets to false when a different user signs in
   bool _passcodeUnlocked = false;
@@ -90,6 +95,9 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _handleSignedOutUser(BuildContext context) {
+    _verifiedUserId = null;
+    _verifyUserFuture = null;
+
     if (_lastUserId != null) {
       _lastUserId = null;
       context.read<JournalProvider>().resetForAuthChange();
@@ -97,9 +105,33 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
-  Future<bool> _shouldShowTutorial() async {
-    final seenTutorial = await TutorialHelper.hasSeenTutorial();
+  Future<bool> _shouldShowTutorial(String uid) async {
+    final seenTutorial = await TutorialHelper.hasSeenTutorial(uid);
     return !seenTutorial;
+  }
+
+  Future<bool> _verifyUserStillExists(User user) async {
+    try {
+      await user.reload();
+
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+      return refreshedUser != null && refreshedUser.uid == user.uid;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' ||
+          e.code == 'user-disabled' ||
+          e.code == 'user-token-expired' ||
+          e.code == 'invalid-user-token') {
+        await FirebaseAuth.instance.signOut();
+        return false;
+      }
+
+      // If the user is offline, do not force logout just because reload failed.
+      if (e.code == 'network-request-failed') {
+        return true;
+      }
+
+      rethrow;
+    }
   }
 
   @override
@@ -124,72 +156,104 @@ class _AuthGateState extends State<AuthGate> {
           return const AuthScreen();
         }
 
-        _triggerSignedInLoad(context, user);
+        if (_verifiedUserId != user.uid) {
+          _verifiedUserId = user.uid;
+          _verifyUserFuture = _verifyUserStillExists(user);
+        }
 
-        return FutureBuilder<void>(
-          future: _loadFuture,
-          builder: (context, loadSnapshot) {
-            if (loadSnapshot.connectionState == ConnectionState.waiting) {
+        return FutureBuilder<bool>(
+          future: _verifyUserFuture,
+          builder: (context, verifySnapshot) {
+            if (verifySnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            if (loadSnapshot.hasError) {
-              return const Scaffold(
-                body: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Failed to load journal entries.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              );
+            if (verifySnapshot.hasError || verifySnapshot.data != true) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _handleSignedOutUser(context);
+                }
+              });
+              return const AuthScreen();
             }
 
-            return FutureBuilder<(bool, String?)>(
-              future: Future.wait([
-                _shouldShowTutorial(),
-                _loadPin(user.uid),
-              ]).then((results) => (results[0] as bool, results[1] as String?)),
-              builder: (context, startupSnapshot) {
-                if (startupSnapshot.connectionState ==
-                    ConnectionState.waiting) {
+            final verifiedUser = FirebaseAuth.instance.currentUser ?? user;
+
+            _triggerSignedInLoad(context, verifiedUser);
+
+            return FutureBuilder<void>(
+              future: _loadFuture,
+              builder: (context, loadSnapshot) {
+                if (loadSnapshot.connectionState == ConnectionState.waiting) {
                   return const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   );
                 }
 
-                if (startupSnapshot.hasError) {
-                  return const HomeScreen();
-                }
-
-                final (showTutorial, storedPin) =
-                    startupSnapshot.data ?? (false, null);
-
-                // Show tutorial before anything else on first launch
-                if (showTutorial) {
-                  return TutorialPage(
-                    onFinished: () {
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    },
+                if (loadSnapshot.hasError) {
+                  return const Scaffold(
+                    body: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'Failed to load journal entries.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
                   );
                 }
 
-                // If a PIN is set and the user hasn't unlocked this session then show the lock screen
-                final pinIsSet = storedPin != null && storedPin.isNotEmpty;
-                if (pinIsSet && !_passcodeUnlocked) {
-                  return _PasscodeLockScreen(
-                    correctPin: storedPin,
-                    onUnlocked: () => setState(() => _passcodeUnlocked = true),
-                  );
-                }
+                return FutureBuilder<(bool, String?)>(
+                  future:
+                      Future.wait([
+                        _shouldShowTutorial(verifiedUser.uid),
+                        _loadPin(verifiedUser.uid),
+                      ]).then(
+                        (results) =>
+                            (results[0] as bool, results[1] as String?),
+                      ),
+                  builder: (context, startupSnapshot) {
+                    if (startupSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    }
 
-                return const HomeScreen();
+                    if (startupSnapshot.hasError) {
+                      return const HomeScreen();
+                    }
+
+                    final (showTutorial, storedPin) =
+                        startupSnapshot.data ?? (false, null);
+
+                    // Show tutorial before anything else on first launch
+                    if (showTutorial) {
+                      return TutorialPage(
+                        onFinished: () {
+                          if (mounted) {
+                            setState(() {});
+                          }
+                        },
+                      );
+                    }
+
+                    // If a PIN is set and the user hasn't unlocked this session then show the lock screen
+                    final pinIsSet = storedPin != null && storedPin.isNotEmpty;
+                    if (pinIsSet && !_passcodeUnlocked) {
+                      return _PasscodeLockScreen(
+                        correctPin: storedPin,
+                        onUnlocked: () =>
+                            setState(() => _passcodeUnlocked = true),
+                      );
+                    }
+
+                    return const HomeScreen();
+                  },
+                );
               },
             );
           },
