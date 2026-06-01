@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/utils/app_theme.dart';
 import 'package:tinylines/utils/tutorial_helper.dart';
 import '/screens/home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // full screen tutorial shown to new users on first launch
 class TutorialPage extends StatefulWidget {
@@ -102,7 +103,10 @@ class _TutorialPageState extends State<TutorialPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  await TutorialHelper.setTutorialSeen();
+                  final uid = FirebaseAuth.instance.currentUser?.uid;
+                  if (uid != null) {
+                    await TutorialHelper.setTutorialSeen(uid);
+                  }
                   if (!mounted) return;
                   if (widget.onFinished != null) {
                     widget.onFinished!();
